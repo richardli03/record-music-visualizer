@@ -2,6 +2,12 @@
 A music visualizer inspired by a record player (disco diva style)
 
 
+## Audio Processing Branch
+
+This branch is primarily dedicated to getting audio processing to work.
+
+For audio analysis, we primarily use librosa for its suite of functions and methods that make solving our problems feasible. 
+
 Dependencies:
 - [ffmpeg](https://launchpad.net/ubuntu/+source/ffmpeg/7:5.1.1-1ubuntu1)
     - download the most recent linux install
@@ -10,22 +16,10 @@ Dependencies:
 
         sudo apt-get install yasm
 
-- [pyAudioAnalysis](https://github.com/tyiannak/pyAudioAnalysis) (for audio processing)
 
-Clone the source of this library: 
+- [librosa](https://librosa.org/doc/main/index.html)
+     - audio processing library
 
-        git clone https://github.com/tyiannak/pyAudioAnalysis.git
-Install dependencies: 
-
-        pip install -r ./requirements.txt
- Install using pip: 
-
-        pip install -e .
+        pip install librosa
 
 
-
-
-## NOT THESE
-- [pyo](http://ajaxsoundstudio.com/pyodoc/download.html) (for audio processing):
-
-        pip3 install pyo

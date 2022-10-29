@@ -1,39 +1,65 @@
-from dataclasses import dataclass
+import librosa as l
+import librosa.display as disp
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.io.wavfile import read
-from scipy.fft import fft, fftfreq
-# from pyAudioAnalysis import audioBasicIO as abi
+import numpy.fft as f
+import pandas as pd
 
-# INPUT_FILE = "../pyAudioAnalysis/pyAudioAnalysis/data/doremi.wav"
 
-INPUT_FILE = "../assets/365.wav"
+INPUT_FILE = "../assets/bass.wav"
+# INPUT_FILE = "assets/365.wav"
+DISPLAY = False
+FREQ = True
+ 
+song, sr = l.load(INPUT_FILE, mono = True)
 
-WAVEFORM = False
+def make_freq_plot(x, Fs, plot):
+    """
+    Make a frequency domain plot with labels
 
-plt.rcParams["figure.figsize"] = [7.50, 3.50]
-plt.rcParams["figure.autolayout"] = True
+    Args:
+        x (array): song data
+        Fs (int): sampling rate
+        plot (bool): add plot data
+    """
 
-s_rate, data = read(INPUT_FILE)
-print(f"number of channels = {data.shape[1]}")
+    if len(x)%2 != 0:
+        # np.append(x,(x[-1]))
+        x = x[:len(x-1)]
 
-N = 600
+        
+    freq_space =np.linspace(-Fs/2, Fs/2-Fs/len(x),len(x)), 1/len(x)*f.fftshift(abs(f.fft(x)))
+    if plot:
+      plt.plot(freq_space[0], (1/len(x))*f.fftshift(abs(f.fft(x))))
+    
+    song_data = (1/len(x))*f.fftshift(abs(f.fft(x)))
+    return song_data, freq_space
 
-length = data.shape[0] / s_rate
-time = np.linspace(0., length, data.shape[0])
+def make_time_plot(x, Fs):
+    plt.plot(song)
 
-transformed_data = fft(data)
+def main():
+  print(len(song))
+  
+  
+  # freq_data, freq_space = make_freq_plot(song[:3000],sr)
+  # len_samples = np.linspace(0, len(song), len(song)//1764)
 
-plt.plot(2.0/N * np.abs(transformed_data[0:N//2]))
-plt.grid()      
-plt.show()
+  if FREQ:
+    samples = np.linspace(0, len(song), len(song)//1764, dtype = "int")
 
-if WAVEFORM:
-    plt.plot(time, data[:, 0], label = "left")
-    plt.plot(time, data[:, 1], label = "right")
-    plt.legend()
+    all_freq_data = pd.DataFrame(columns = samples)
 
-    plt.ylabel("Amplitude")
-    plt.xlabel("Time")
+    for i, sample in enumerate(samples[:-1]):
+      print(song[samples[i]:samples[i+1]])
+      freq_data, freq_space, sub1 = make_freq_plot(song[samples[i]:samples[i+1]],sr)
+      all_freq_data[sample] = pd.Series(l.amplitude_to_db(freq_data))
+    all_freq_data.to_csv("all_freq_data.csv")
+
+  if DISPLAY: 
     plt.show()
-
+    plt.ylabel('Magnitude of signal')
+    plt.xlabel('Frequency (Hz)')
+  
+if __name__ == "__main__":
+    main()

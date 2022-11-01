@@ -11,12 +11,6 @@ import pandas as pd
 import librosa as l
 import librosa.display as disp
 
-INPUT_FILE = "../assets/bass.wav"
-# INPUT_FILE = "assets/365.wav"
-DISPLAY = False
-FREQ = True
- 
-song, sr = l.load(INPUT_FILE, mono = True)
 
 def make_freq_spread(x, Fs, plot):
     """
@@ -51,11 +45,41 @@ def data_splitter(freq_data):
   Args:
       freq_data (pandas Dataframe): a dataframe with all of the frequency data over the course of a song
   """
+  
+  # Split the rows in half -- from 1780 to 890: 1780
+  # freq_data = freq_data.fillna(value = -100)
+  halved_data = freq_data[len(freq_data)//2:]
+  
+  # split into treble, mid, bass:
+  bass_data = halved_data[:20]
+  mid_data = halved_data[20:80]
+  treble_data = halved_data[80:]
+  
+  
+  # Highest frequencies will be from 1300 - 1780
+  # mid frequencies will be 400-550
+  return bass_data, mid_data, treble_data
+
+def compute_volumes(subset_freq):
+  """
+  Compute the volume/time of a frequency spectrum over time
+
+  Args:
+      subset_freq (pandas Dataframe): a datafram with all the frequency data of a certain spectrum over the course of a song
+  """
+  pass
+
+  
 
 def main():
-  print(len(song))
+  INPUT_FILE = "../assets/treble.wav"
+  # INPUT_FILE = "assets/365.wav"
+  DISPLAY = False
+  FREQ = True
   
-  
+  song, sr = l.load(INPUT_FILE, mono = True)
+
+
   # freq_data, freq_space = make_freq_plot(song[:3000],sr)
   # len_samples = np.linspace(0, len(song), len(song)//1764)
 
@@ -65,19 +89,28 @@ def main():
     all_freq_data = pd.DataFrame(columns = samples)
 
     for i, sample in enumerate(samples[:-1]):
-      print(song[samples[i]:samples[i+1]])
+      # print(song[samples[i]:samples[i+1]])
       freq_data, freq_space = make_freq_spread(song[samples[i]:samples[i+1]],sr, True)
+      # print(len(freq_space[:][0]))
       all_freq_data[sample] = pd.Series(l.amplitude_to_db(freq_data))
-      plt.show()
-      plt.ylabel('Magnitude of signal')
-      plt.xlabel('Frequency (Hz)')
+      # plt.show()
+      # plt.ylabel('Magnitude of signal')
+      # plt.xlabel('Frequency (Hz)')
+      # data_splitter(all_freq_data.fillna(value = -100))
+      
+    bass_data, mid_data, treble_data = data_splitter(all_freq_data)
+    bass_data.to_csv("bass_data.csv")
+    mid_data.to_csv("mid_data.csv")
+    treble_data.to_csv("treble_data.csv")
+      
+     
     
-    # all_freq_data.to_csv("all_freq_data.csv")
-
   if DISPLAY: 
     plt.show()
     plt.ylabel('Magnitude of signal')
     plt.xlabel('Frequency (Hz)')
+    # all_freq_data.to_csv("all_freq_data.csv")
+    
   
 if __name__ == "__main__":
     main()

@@ -16,9 +16,9 @@ import librosa.display as disp
 INPUT_FILE = "../assets/bass.wav"
 # INPUT_FILE = "assets/365.wav"
 
-# booleans to specify whether to create a display every time or not
+# booleans to specify whether to show visuals or not
 DISPLAY = False
-FREQ = True
+FREQ = False
  
  # librosa package that loads song into data points
  # sr is the sample rate, song is all the data points
@@ -34,16 +34,19 @@ def make_freq_spread(x, Fs, plot):
         plot (bool): add plot data
     """
 
-    if len(x)%2 != 0:
+    song_length = len(x)
+
+    if song_length%2 != 0:
         # np.append(x,(x[-1]))
-        x = x[:len(x-1)]
+        song_length -= 1
+        x = x[:song_length]
 
     # makes a linspace for the frequency spread, take fft
-    freq_space =np.linspace(-Fs/2, Fs/2-Fs/len(x),len(x)), 1/len(x)*f.fftshift(abs(f.fft(x))) 
+    freq_space =np.linspace(-Fs/2, Fs/2-Fs/song_length,song_length), 1/song_length*f.fftshift(abs(f.fft(x))) 
     if plot:
-      plt.plot(freq_space[0], (1/len(x))*f.fftshift(abs(f.fft(x)))) # plots frequency vs volume
+      plt.plot(freq_space[0], (1/song_length)*f.fftshift(abs(f.fft(x)))) # plots frequency vs volume
     
-    song_data = (1/len(x))*f.fftshift(abs(f.fft(x))) # center data about zero
+    song_data = (1/song_length)*f.fftshift(abs(f.fft(x))) # center data about zero
     return song_data, freq_space
 
 def plot_song(x):
@@ -91,22 +94,28 @@ def main():
   
   song, sr = l.load(INPUT_FILE, mono = True)
 
+  song_length = len(song)
+  sample_length = 100 # length of one sample in ms
+  num_samples = song_length // sample_length # the number of samples we have
 
   # freq_data, freq_space = make_freq_plot(song[:3000],sr)
   # len_samples = np.linspace(0, len(song), len(song)//1764)
 
   if FREQ:
-    samples = np.linspace(0, len(song), len(song)//1764, dtype = "int") # create a linspace for time (by sample)
+    samples = np.linspace(0, song_length, int(song_length//num_samples), dtype = "int") # create a linspace for time (by sample)
 
     # creates dataframe with samples as column headers and frequencies as row headers
     all_freq_data = pd.DataFrame(columns = samples)
 
     # iterates through samples (time steps)
     for i, sample in enumerate(samples[:-1]):
+
       # print(song[samples[i]:samples[i+1]])
-      freq_data, freq_space = make_freq_spread(song[samples[i]:samples[i+1]],sr, True)
+      freq_data, freq_space = make_freq_spread(song[samples[i]:samples[i+1]], sr, True)
+
       # print(len(freq_space[:][0]))
       all_freq_data[sample] = pd.Series(l.amplitude_to_db(freq_data))
+
       # plt.show()
       # plt.ylabel('Magnitude of signal')
       # plt.xlabel('Frequency (Hz)')

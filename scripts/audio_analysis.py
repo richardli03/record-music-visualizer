@@ -82,7 +82,15 @@ def compute_volumes(subset_freq):
   Args:
       subset_freq (pandas Dataframe): a datafram with all the frequency data of a certain spectrum over the course of a song
   """
-  pass
+  
+  average = []
+
+  for column in subset_freq:
+    mean_of_column = np.mean(subset_freq[column])
+    average.append(mean_of_column)
+    
+  return average
+
 
   
 
@@ -111,7 +119,7 @@ def main():
     for i, sample in enumerate(samples[:-1]):
 
       # print(song[samples[i]:samples[i+1]])
-      freq_data, freq_space = make_freq_spread(song[samples[i]:samples[i+1]], sr, True)
+      freq_data, freq_space = make_freq_spread(song[samples[i]:samples[i+1]], sr, False)
 
       # print(len(freq_space[:][0]))
       all_freq_data[sample] = pd.Series(l.amplitude_to_db(freq_data))
@@ -122,11 +130,21 @@ def main():
       # data_splitter(all_freq_data.fillna(value = -100))
       
     bass_data, mid_data, treble_data = data_splitter(all_freq_data)
-    bass_data.to_csv("bass_data.csv")
-    mid_data.to_csv("mid_data.csv")
-    treble_data.to_csv("treble_data.csv")
+    b_o_t = compute_volumes(bass_data)
+    m_o_t = compute_volumes(mid_data)
+    t_o_t = compute_volumes(treble_data)
+    
+    
+    plt.plot(b_o_t)
+    plt.plot(m_o_t)
+    plt.plot(t_o_t)
+    plt.legend(["bass","mid","treble"])
+    plt.show()
+    # bass_data.to_csv("bass_data.csv")
+    # mid_data.to_csv("mid_data.csv")
+    # treble_data.to_csv("treble_data.csv")
       
-     
+    # print(compute_volumes(bass_data))
     
   if DISPLAY: 
     plt.show()

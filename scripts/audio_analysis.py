@@ -64,11 +64,17 @@ def data_splitter(freq_data):
   # Split the rows in half -- from 1780 to 890: 1780
   # freq_data = freq_data.fillna(value = -100)
   halved_data = freq_data[len(freq_data)//2:]
+
+  # compute logarithmic cutoffs for frequency ranges
+  max_log = np.log(halved_data[len(halved_data) - 1])
+  print(max_log)
+  bass_cutoff = 10**(max_log/3) # defines a frequency as the border between bass and mid. to be tuned.
+  mid_cutoff = 10**(max_log*(2/3)) # defines border frequency between mid and high. to be tuned.
   
   # split into treble, mid, bass:
-  bass_data = halved_data[:20]
-  mid_data = halved_data[20:80]
-  treble_data = halved_data[80:]
+  bass_data = halved_data[:bass_cutoff]
+  mid_data = halved_data[bass_cutoff:mid_cutoff]
+  treble_data = halved_data[mid_cutoff:]
   
   
   # Highest frequencies will be from 1300 - 1780

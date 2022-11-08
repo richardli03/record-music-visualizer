@@ -62,10 +62,22 @@ def data_splitter(freq_data):
       freq_data (pandas Dataframe): a dataframe with all of the frequency data over the course of a song
   """
   
-  # Split the rows in half -- from 1780 to 890: 1780
+  # Split the rows in half -- from 1780 to 0:889
   # freq_data = freq_data.fillna(value = -100)
-  halved_data = freq_data[len(freq_data)//2:]
-  
+  halved_data = freq_data[:len(freq_data)//2]
+  halved_data.to_csv('halved_data.csv')
+
+  length = len(halved_data)
+  print(halved_data.iloc[length - 1, 0])
+
+  # compute logarithmic cutoffs for frequency ranges
+  max_log = np.log10(halved_data.iloc[length - 1, 0])
+  print("max log", max_log)
+  bass_cutoff = int(10**(max_log/3)) # defines a frequency as the border between bass and mid. to be tuned.
+  print ("bass cutoff: ", bass_cutoff)
+  mid_cutoff = int(10**(max_log*(2/3))) # defines border frequency between mid and high. to be tuned.
+  print("mid cutoff: ", mid_cutoff)
+
   # split into treble, mid, bass:
   bass_data = halved_data[:30]
   mid_data = halved_data[30:100]
@@ -128,6 +140,10 @@ def compute_volumes(subset_freq):
   
 
 def main():
+  INPUT_FILE = "../assets/bass.wav"
+  # INPUT_FILE = "assets/365.wav"
+  DISPLAY = False
+  FREQ = True
   
   song, sr = l.load(INPUT_FILE, mono = True)
 
@@ -135,8 +151,7 @@ def main():
   sample_length = 100 # length of one sample in ms
   num_samples = song_length // sample_length # the number of samples we have
 
-  # freq_data, freq_space = make_freq_plot(song[:3000],sr)
-  # len_samples = np.linspace(0, len(song), len(song)//1764)
+  len_samples = np.linspace(0, len(song), len(song)//1764)
 
   if FREQ:
     samples = np.linspace(0, song_length, int(song_length//num_samples), dtype = "int") # create a linspace for time (by sample)
@@ -148,10 +163,11 @@ def main():
     for i, sample in enumerate(samples[:-1]):
 
       # print(song[samples[i]:samples[i+1]])
-      freq_data, freq_space = make_freq_spread(song[samples[i]:samples[i+1]], sr, False)
+      freq_data, freq_space = make_freq_spread(song[samples[i]:samples[i+1]], sr, True)
 
-      # print(len(freq_space[:][0]))
-      all_freq_data[sample] = pd.Series(l.amplitude_to_db(freq_data))
+    # creating all_freq_data from csv to improve runtime (since right now we're
+    # only looking at this one audio sample)
+    all_freq_data = pd.read_csv('all_freq_data.csv')
 
       # plt.show()
       # plt.ylabel('Magnitude of signal')

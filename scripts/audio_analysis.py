@@ -14,7 +14,7 @@ import librosa.display as disp
 
 import pdb
 # specify which audio file we're using
-# INPUT_FILE = "../assets/treble.wav"
+# INPUT_FILE = "../assets/mids.wav"
 INPUT_FILE = "../assets/365.wav"
 
 # booleans to specify whether to show visuals or not
@@ -67,9 +67,9 @@ def data_splitter(freq_data):
   halved_data = freq_data[len(freq_data)//2:]
   
   # split into treble, mid, bass:
-  bass_data = halved_data[:20]
-  mid_data = halved_data[20:80]
-  treble_data = halved_data[80:]
+  bass_data = halved_data[:30]
+  mid_data = halved_data[30:100]
+  treble_data = halved_data[100:]
   
   
   # Highest frequencies will be from 1300 - 1780
@@ -84,8 +84,8 @@ def weighted_avg(freqs):
       freqs (_type_): _description_
   """
 
-  sum_of_weights = 0
-  sum_of_val_weight = 0
+  weights = []
+  val_weights = []
   
   for val in freqs:
     if val < -70:
@@ -95,11 +95,15 @@ def weighted_avg(freqs):
     else:
       weight = 1
     
-    sum_of_val_weight += val*weight
-    sum_of_weights += weight
+    val_weights.append(val*weight)
+    weights.append(weight)
+    
+  # if every signal was < -70 dB
+  if len(set(weights)) == 1:
+    return -100
   
   # pdb.set_trace()
-  return sum_of_val_weight/sum_of_weights
+  return sum(val_weights)/sum(weights)
      
     
       

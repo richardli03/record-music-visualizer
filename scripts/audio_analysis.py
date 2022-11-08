@@ -12,13 +12,14 @@ import pandas as pd
 import librosa as l
 import librosa.display as disp
 
+import pdb
 # specify which audio file we're using
-INPUT_FILE = "../assets/bass.wav"
-# INPUT_FILE = "assets/365.wav"
+# INPUT_FILE = "../assets/treble.wav"
+INPUT_FILE = "../assets/365.wav"
 
 # booleans to specify whether to show visuals or not
 DISPLAY = False
-FREQ = False
+FREQ = True
  
  # librosa package that loads song into data points
  # sr is the sample rate, song is all the data points
@@ -64,35 +65,57 @@ def data_splitter(freq_data):
   # Split the rows in half -- from 1780 to 890: 1780
   # freq_data = freq_data.fillna(value = -100)
   halved_data = freq_data[len(freq_data)//2:]
-
-  # compute logarithmic cutoffs for frequency ranges
-  max_log = np.log(halved_data[len(halved_data) - 1])
-  print(max_log)
-  bass_cutoff = 10**(max_log/3) # defines a frequency as the border between bass and mid. to be tuned.
-  mid_cutoff = 10**(max_log*(2/3)) # defines border frequency between mid and high. to be tuned.
   
   # split into treble, mid, bass:
-  bass_data = halved_data[:bass_cutoff]
-  mid_data = halved_data[bass_cutoff:mid_cutoff]
-  treble_data = halved_data[mid_cutoff:]
+  bass_data = halved_data[:20]
+  mid_data = halved_data[20:80]
+  treble_data = halved_data[80:]
   
   
   # Highest frequencies will be from 1300 - 1780
   # mid frequencies will be 400-550
   return bass_data, mid_data, treble_data
 
+def weighted_avg(freqs):
+  """
+  Take the weighted average of a subset frequency
+
+  Args:
+      freqs (_type_): _description_
+  """
+
+  sum_of_weights = 0
+  sum_of_val_weight = 0
+  
+  for val in freqs:
+    if val < -70:
+      weight = 0.01
+    if val > -50:
+      weight = 150
+    else:
+      weight = 1
+    
+    sum_of_val_weight += val*weight
+    sum_of_weights += weight
+  
+  # pdb.set_trace()
+  return sum_of_val_weight/sum_of_weights
+     
+    
+      
+    
 def compute_volumes(subset_freq):
   """
   Compute the volume/time of a frequency spectrum over time
 
   Args:
-      subset_freq (pandas Dataframe): a datafram with all the frequency data of a certain spectrum over the course of a song
+      subset_freq (pandas Dataframe): a dataframe with all the frequency data of a certain spectrum over the course of a song
   """
   
   average = []
 
   for column in subset_freq:
-    mean_of_column = np.mean(subset_freq[column])
+    mean_of_column = weighted_avg(subset_freq[column])
     average.append(mean_of_column)
     
   return average
@@ -101,10 +124,6 @@ def compute_volumes(subset_freq):
   
 
 def main():
-  INPUT_FILE = "../assets/treble.wav"
-  # INPUT_FILE = "assets/365.wav"
-  DISPLAY = False
-  FREQ = True
   
   song, sr = l.load(INPUT_FILE, mono = True)
 
@@ -136,6 +155,7 @@ def main():
       # data_splitter(all_freq_data.fillna(value = -100))
       
     bass_data, mid_data, treble_data = data_splitter(all_freq_data)
+    
     b_o_t = compute_volumes(bass_data)
     m_o_t = compute_volumes(mid_data)
     t_o_t = compute_volumes(treble_data)
@@ -144,10 +164,11 @@ def main():
     plt.plot(b_o_t)
     plt.plot(m_o_t)
     plt.plot(t_o_t)
+    
     plt.legend(["bass","mid","treble"])
     plt.show()
     # bass_data.to_csv("bass_data.csv")
-    # mid_data.to_csv("mid_data.csv")
+    # mid_data.to_csv("mid_data.csv")g
     # treble_data.to_csv("treble_data.csv")
       
     # print(compute_volumes(bass_data))

@@ -11,11 +11,10 @@ import numpy.fft as f
 import pandas as pd
 import librosa as l
 import librosa.display as disp
-
 import pdb
 # specify which audio file we're using
-# INPUT_FILE = "../assets/mids.wav"
-INPUT_FILE = "../assets/365.wav"
+INPUT_FILE = "../assets/mids.wav"
+# INPUT_FILE = "../assets/365.wav"
 
 # booleans to specify whether to show visuals or not
 DISPLAY = False
@@ -64,24 +63,25 @@ def data_splitter(freq_data):
   
   # Split the rows in half -- from 1780 to 0:889
   # freq_data = freq_data.fillna(value = -100)
-  halved_data = freq_data[:len(freq_data)//2]
-  halved_data.to_csv('halved_data.csv')
+  halved_data = freq_data[len(freq_data)//2:]
+  # halved_data.to_csv('halved_data.csv')
 
   length = len(halved_data)
   print(halved_data.iloc[length - 1, 0])
 
   # compute logarithmic cutoffs for frequency ranges
+  # pdb.set_trace()
   max_log = np.log10(halved_data.iloc[length - 1, 0])
   print("max log", max_log)
-  bass_cutoff = int(10**(max_log/3)) # defines a frequency as the border between bass and mid. to be tuned.
+  bass_cutoff = int(10**(max_log/3) + 20) # defines a frequency as the border between bass and mid. to be tuned.
   print ("bass cutoff: ", bass_cutoff)
-  mid_cutoff = int(10**(max_log*(2/3))) # defines border frequency between mid and high. to be tuned.
+  mid_cutoff = int(20 + 10**(max_log*(2/3))) # defines border frequency between mid and high. to be tuned.
   print("mid cutoff: ", mid_cutoff)
 
   # split into treble, mid, bass:
-  bass_data = halved_data[:30]
-  mid_data = halved_data[30:100]
-  treble_data = halved_data[100:]
+  bass_data = halved_data[:bass_cutoff]
+  mid_data = halved_data[bass_cutoff:mid_cutoff]
+  treble_data = halved_data[mid_cutoff:]
   
   
   # Highest frequencies will be from 1300 - 1780
@@ -114,7 +114,6 @@ def weighted_avg(freqs):
   if len(set(weights)) == 1:
     return -100
   
-  # pdb.set_trace()
   return sum(val_weights)/sum(weights)
      
     
@@ -136,22 +135,12 @@ def compute_volumes(subset_freq):
     
   return average
 
-
-  
-
 def main():
-  INPUT_FILE = "../assets/bass.wav"
-  # INPUT_FILE = "assets/365.wav"
-  DISPLAY = False
-  FREQ = True
-  
   song, sr = l.load(INPUT_FILE, mono = True)
 
   song_length = len(song)
   sample_length = 100 # length of one sample in ms
   num_samples = song_length // sample_length # the number of samples we have
-
-  len_samples = np.linspace(0, len(song), len(song)//1764)
 
   if FREQ:
     samples = np.linspace(0, song_length, int(song_length//num_samples), dtype = "int") # create a linspace for time (by sample)
@@ -161,20 +150,12 @@ def main():
 
     # iterates through samples (time steps)
     for i, sample in enumerate(samples[:-1]):
-
-      # print(song[samples[i]:samples[i+1]])
-      freq_data, freq_space = make_freq_spread(song[samples[i]:samples[i+1]], sr, True)
-
-    # creating all_freq_data from csv to improve runtime (since right now we're
-    # only looking at this one audio sample)
-    all_freq_data = pd.read_csv('all_freq_data.csv')
-
-      # plt.show()
-      # plt.ylabel('Magnitude of signal')
-      # plt.xlabel('Frequency (Hz)')
-      # data_splitter(all_freq_data.fillna(value = -100))
+      freq_data, freq_space = make_freq_spread(song[samples[i]:samples[i+1]], sr, False)
+      all_freq_data[sample] = pd.Series(l.amplitude_to_db(freq_data))
       
-    bass_data, mid_data, treble_data = data_splitter(all_freq_data)
+  
+    all_freq_data = pd.read_csv('all_freq_data.csv')
+    bass_data, mid_data, treble_data = data_splitter(all_freq_data.fillna(value = -100))
     
     b_o_t = compute_volumes(bass_data)
     m_o_t = compute_volumes(mid_data)

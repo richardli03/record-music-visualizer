@@ -169,10 +169,10 @@ def create_csv(data):
   data.to_csv("all_freq_data.csv")
 
 
-def plot_volumes(input):
+def process(input):
   """
   Tie together all the functions so you can start with an audio input
-  and get out the plots of volume over time for bass, mid, and treble.
+  and get out the data for volume over time for bass, mid, and treble.
 
   Args:
     input (string): file path to .wav audio file to be used for the rest of
@@ -186,16 +186,25 @@ def plot_volumes(input):
   b_o_t = compute_volumes(bass_data)
   m_o_t = compute_volumes(mid_data)
   t_o_t = compute_volumes(treble_data)
-    
-    
-  plt.plot(b_o_t)
-  plt.plot(m_o_t)
-  plt.plot(t_o_t)
+
+  return b_o_t, m_o_t, t_o_t
+
+def plot_volume(bot, mot, tot):
+  """
+  Take bass mid or treble volumes over time and plot them on a graph (normal).
+
+  Args:
+    bot (array): average bass volume over time
+    mot (array): average mid volume over time
+    tot (array): average treble volume over time
+  """
+
+  plt.plot(bot)
+  plt.plot(mot)
+  plt.plot(tot)
     
   plt.legend(["bass","mid","treble"])
   plt.show()
-
-  return b_o_t, m_o_t, t_o_t
 
 def draw_record_visual(bot, mot, tot):
   """"

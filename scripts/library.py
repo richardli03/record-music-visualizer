@@ -13,7 +13,7 @@ import pdb
 
 # keeps track of whether to read all_freq_data from a csv or make it again
 # (makes runtime a lot shorter)
-FROM_CSV = True 
+# FROM_CSV = True 
 
 def input_file(audio):
     """
@@ -71,7 +71,6 @@ def data_splitter(freq_data):
   halved_data = freq_data[len(freq_data)//2:] #takes last half of data
 
   length = len(halved_data)
-  halved_data.to_csv('halved_data.csv')
 
   # compute logarithmic cutoffs
   # last_row = halved_data.iloc[length - 1].index
@@ -132,7 +131,7 @@ def compute_volumes(subset_freq):
     
   return average
 
-def create_freq_data():
+def create_freq_data(FROM_CSV):
   """
   Put all the data from the song into a data frame with time (which is in
   samples) along the columns and frequencies as the rows.
@@ -156,47 +155,58 @@ def create_freq_data():
       freq_data, freq_space = make_freq_spread(song[samples[i]:samples[i+1]], sr, False)
       all_freq_data[sample] = pd.Series(l.amplitude_to_db(freq_data))
 
+    create_csv(all_freq_data)  
+
   return all_freq_data
 
-def create_csv():
+def create_csv(data):
   """
   Save all_freq_data from create_freq_data as a csv.
 
   Args:
     None
   """
-
-  data = create_freq_data()
   data.to_csv("all_freq_data.csv")
 
 
-def plot_volumes(input):
+def process(input, FROM_CSV):
   """
   Tie together all the functions so you can start with an audio input
-  and get out the plots of volume over time for bass, mid, and treble.
+  and get out the data for volume over time for bass, mid, and treble.
 
   Args:
     input (string): file path to .wav audio file to be used for the rest of
       the functions
+    FROM_CSV (bool): True means read from the csv called all_freq_data, False
+      means make the freq. spread and create the csv. This improves runtime.
   """
 
   input_file(input)
-  all_freq_data = create_freq_data()
+  all_freq_data = create_freq_data(FROM_CSV)
   bass_data, mid_data, treble_data = data_splitter(all_freq_data)
     
   b_o_t = compute_volumes(bass_data)
   m_o_t = compute_volumes(mid_data)
   t_o_t = compute_volumes(treble_data)
-    
-    
-  plt.plot(b_o_t)
-  plt.plot(m_o_t)
-  plt.plot(t_o_t)
+
+  return b_o_t, m_o_t, t_o_t
+
+def plot_volume(bot, mot, tot):
+  """
+  Take bass mid or treble volumes over time and plot them on a graph (normal).
+
+  Args:
+    bot (array): average bass volume over time
+    mot (array): average mid volume over time
+    tot (array): average treble volume over time
+  """
+
+  plt.plot(bot)
+  plt.plot(mot)
+  plt.plot(tot)
     
   plt.legend(["bass","mid","treble"])
   plt.show()
-
-  return b_o_t, m_o_t, t_o_t
 
 def draw_record_visual(bot, mot, tot):
   """"
@@ -209,16 +219,11 @@ def draw_record_visual(bot, mot, tot):
     tot (array): average treble volume over time
   """
 
-  # total_radius = 6 # inches
-  # bass_radius = 1
-  # mid_radius = bass_radius + total_radius/3
-  # treble_radius = mid_radius + total_radius/3
-
   data = [bot, mot, tot]
-  radii = [1, 3, 5]
+  radii = [1, 3, 5] # baseline radii (no var) for each bucket
   avgs = [np.average(bot), np.average(mot), np.average(tot)]
 
-  fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+  # fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
 
   for i in range(3):
     # find variation of each datapoint from average and normalize it
@@ -227,7 +232,11 @@ def draw_record_visual(bot, mot, tot):
 
     theta = np.linspace(0, 2*np.pi, len(data[i]), True)
 
-    ax.plot(theta, r)
+    plt.polar(theta, r)
+
+  plt.grid(False)
+  plt.yticks([])
+  plt.xticks([])
 
   plt.show()
 

@@ -13,7 +13,9 @@ import pdb
 
 # keeps track of whether to read all_freq_data from a csv or make it again
 # (makes runtime a lot shorter)
-FROM_CSV = True 
+FROM_CSV = False 
+
+FREQ_SPLIT_VECTOR = [0.41, 0.58, 0.8] # split, split, ceiling
 
 def input_file(audio):
     """
@@ -77,13 +79,14 @@ def data_splitter(freq_data):
   # last_row = halved_data.iloc[length - 1].index
   last_row = length - 1
   max_log = np.log10(last_row)
-  bass_cutoff = int(10**(max_log*(1/3)) + 20) # can be tuned
-  mid_cutoff = int(20 + 10**(max_log*(2/3))) # can be tuned
-
+  bass_cutoff = int(10**(max_log*(FREQ_SPLIT_VECTOR[0]))) # can be tuned
+  mid_cutoff = int(20 + 10**(max_log*(FREQ_SPLIT_VECTOR[1]))) # can be tuned
+  treb_cutoff = int(10**(max_log*(FREQ_SPLIT_VECTOR[2]))) # ceiling for frequencies
+  
   # split data
   bass_data = halved_data[:bass_cutoff]
   mid_data = halved_data[bass_cutoff:mid_cutoff]
-  treble_data = halved_data[mid_cutoff:]
+  treble_data = halved_data[mid_cutoff:treb_cutoff]
   
   return bass_data, mid_data, treble_data
 
@@ -100,10 +103,10 @@ def weighted_avg(freqs):
   val_weights = []
   
   for val in freqs:
-    if val < -70: # filter out quiet/ambient noise
+    if val < -75: # filter out quiet/ambient noise
       weight = 0.01
-    if val > -50: # weight actual signals so they show up
-      weight = 150
+    if val > -50: # weight actual signals so they show 
+      weight = 3
     else:
       weight = 1
     

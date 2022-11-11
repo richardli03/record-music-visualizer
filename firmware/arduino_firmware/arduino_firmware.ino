@@ -21,43 +21,35 @@ IN 4 -> pin 3
 */
 
 #include <Arduino.h>
-#include <L298N.h>
 #include "BasicStepperDriver.h"
 
-// stepper motor steps per revolution (200 steps = 1.8 degrees/step)
+// Motor steps per full revolution (200 steps or 1.8 degrees/step)
 #define MOTOR_STEPS 200
 #define RPM 120
-// microstepping not set externally (1 = full step)
+
+// microstepping (1 = full step aka no microstepping)
 #define MICROSTEPS 1
 
-// define wires
+// stepper 1
 #define DIR1 8
 #define STEP1 9
-
-
-// global variables
-String command;
+BasicStepperDriver stepper1(MOTOR_STEPS, DIR1, STEP1);
 
 void setup() {
   // initialize serial communication
   Serial.begin(115200);
-
+  stepper1.begin(RPM, MICROSTEPS);
 }
-
-
 void loop() {
-readSerialBuffer();
-
-}
-
-
-// **funtions defined below this point**
-
-// read serial and update command string
-void readSerialBuffer() {
   while (Serial.available() == 0) {
     // wait for data available in serial receive buffer
   }
-  command = Serial.readStringUntil('\n');  // read until timeout
-  command.trim();                          // remove white space or \n
+  String command = Serial.readStringUntil('\n');  // read until timeout
+  Serial.print(command);
+  if (command.startsWith("s1")) {
+    int deg = command.substring(command.indexOf(" ") + 1, command.length()).toInt();
+    stepper1.rotate(deg);
+  } else if (command.startsWith("dc")) {
+    Serial.println("DC Motor Time!");
+  }
 }

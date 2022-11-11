@@ -71,7 +71,6 @@ def data_splitter(freq_data):
   halved_data = freq_data[len(freq_data)//2:] #takes last half of data
 
   length = len(halved_data)
-  halved_data.to_csv('halved_data.csv')
 
   # compute logarithmic cutoffs
   # last_row = halved_data.iloc[length - 1].index
@@ -156,17 +155,17 @@ def create_freq_data():
       freq_data, freq_space = make_freq_spread(song[samples[i]:samples[i+1]], sr, False)
       all_freq_data[sample] = pd.Series(l.amplitude_to_db(freq_data))
 
+    create_csv(all_freq_data)  
+
   return all_freq_data
 
-def create_csv():
+def create_csv(data):
   """
   Save all_freq_data from create_freq_data as a csv.
 
   Args:
     None
   """
-
-  data = create_freq_data()
   data.to_csv("all_freq_data.csv")
 
 
@@ -209,16 +208,11 @@ def draw_record_visual(bot, mot, tot):
     tot (array): average treble volume over time
   """
 
-  # total_radius = 6 # inches
-  # bass_radius = 1
-  # mid_radius = bass_radius + total_radius/3
-  # treble_radius = mid_radius + total_radius/3
-
   data = [bot, mot, tot]
-  radii = [1, 3, 5]
+  radii = [1, 3, 5] # baseline radii (no var) for each bucket
   avgs = [np.average(bot), np.average(mot), np.average(tot)]
 
-  fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+  # fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
 
   for i in range(3):
     # find variation of each datapoint from average and normalize it
@@ -227,7 +221,11 @@ def draw_record_visual(bot, mot, tot):
 
     theta = np.linspace(0, 2*np.pi, len(data[i]), True)
 
-    ax.plot(theta, r)
+    plt.polar(theta, r)
+
+  plt.grid(False)
+  plt.yticks([])
+  plt.xticks([])
 
   plt.show()
 

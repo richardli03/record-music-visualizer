@@ -11,12 +11,9 @@ import librosa as l
 import librosa.display as disp
 import pdb
 
-# control visibility of visuals
-DISPLAY = False
-FREQ = True
-
-# initialize global variables
-INPUT_FILE, song, sr, song_length, sample_length, num_samples = None
+# keeps track of whether to read all_freq_data from a csv or make it again
+# (makes runtime a lot shorter)
+FROM_CSV = True 
 
 def input_file(audio):
     """
@@ -26,29 +23,20 @@ def input_file(audio):
         audio (string): file path to .wav audio file to be used for the rest of
             the functions
     """
-    INPUT_FILE = audio
-    
+    global INPUT_FILE; INPUT_FILE = audio
+    global song; global sr
     song, sr = l.load(INPUT_FILE, mono = True)
 
-    song_length = len(song)
-    sample_length = 100 # length of one sample in ms
-    num_samples = song_length // sample_length # the number of samples we have
-
-def display_visuals(choice):
-    """
-    Changes state of DISPLAY. By default it's false.
-
-    Args:
-        choice (bool): True means it will display, False means it won't
-    """
-    DISPLAY = choice
+    global song_length; song_length = len(song)
+    global sample_length; sample_length = 100 # milliseconds
+    global num_samples; num_samples = song_length // sample_length
 
 def make_freq_spread(x, Fs, plot):
     """
     Make a frequency domain plot with labels
     
     Args:
-        x (array): song data
+        x (array): a sample in the song data (a small time period)
         Fs (int): sampling rate
         plot (bool): add plot data
     """
@@ -79,17 +67,21 @@ def data_splitter(freq_data):
       freq_data (pandas Dataframe): a dataframe with all of the frequency data over the course of a song
   """
   
-  # takes lower half of symmetric fft data
-  halved_data = freq_data[len(freq_data)//2:]
+  freq_data = freq_data.fillna(value = -100) #NaNs become -100
+  halved_data = freq_data[len(freq_data)//2:] #takes last half of data
 
   length = len(halved_data)
+  halved_data.to_csv('halved_data.csv')
 
-  # compute logarithmic cutoffs for frequency ranges
-  max_log = np.log10(halved_data.iloc[length - 1, 0])
-  bass_cutoff = int(10**(max_log*(1/3)) + 20) # can be tuned.
-  mid_cutoff = int(20 + 10**(max_log*(2/3))) # can be tuned.
+  # compute logarithmic cutoffs
+  # last_row = halved_data.iloc[length - 1].index
+  last_row = length - 1
+  print(last_row)
+  max_log = np.log10(last_row)
+  bass_cutoff = int(10**(max_log*(1/3)) + 20) # can be tuned
+  mid_cutoff = int(20 + 10**(max_log*(2/3))) # can be tuned
 
-  # split data into treble, mid, bass:
+  # split data
   bass_data = halved_data[:bass_cutoff]
   mid_data = halved_data[bass_cutoff:mid_cutoff]
   treble_data = halved_data[mid_cutoff:]
@@ -140,6 +132,69 @@ def compute_volumes(subset_freq):
     average.append(mean_of_column)
     
   return average
+
+def create_freq_data():
+  """
+  Put all the data from the song into a data frame with time (which is in
+  samples) along the columns and frequencies as the rows.
+
+  If a CSV of it exists, get it from there to reduce runtime. Otherwise create
+  it by making a frequency spread, etc.
+
+  Note, you need to make a new csv every time you use a new sample.
+
+  Args:
+    None
+  """
+  if FROM_CSV:
+    all_freq_data = pd.read_csv('all_freq_data.csv')
+  else:
+    samples = np.linspace(0, song_length, int(song_length//num_samples), dtype = "int") # create a linspace for time (by sample)
+
+    all_freq_data = pd.DataFrame(columns = samples)
+
+    for i, sample in enumerate(samples[:-1]):
+      freq_data, freq_space = make_freq_spread(song[samples[i]:samples[i+1]], sr, False)
+      all_freq_data[sample] = pd.Series(l.amplitude_to_db(freq_data))
+
+  return all_freq_data
+
+def create_csv():
+  """
+  Save all_freq_data from create_freq_data as a csv.
+
+  Args:
+    None
+  """
+
+  data = create_freq_data()
+  data.to_csv("all_freq_data.csv")
+
+
+def plot_volumes(input):
+  """
+  Tie together all the functions so you can start with an audio input
+  and get out the plots of volume over time for bass, mid, and treble.
+
+  Args:
+    input (string): file path to .wav audio file to be used for the rest of
+      the functions
+  """
+  input_file(input)
+  all_freq_data = create_freq_data()
+  bass_data, mid_data, treble_data = data_splitter(all_freq_data)
+    
+  b_o_t = compute_volumes(bass_data)
+  m_o_t = compute_volumes(mid_data)
+  t_o_t = compute_volumes(treble_data)
+    
+    
+  plt.plot(b_o_t)
+  plt.plot(m_o_t)
+  plt.plot(t_o_t)
+    
+  plt.legend(["bass","mid","treble"])
+  plt.show()
 
 if __name__ == "main" :
     print("a funky fresh disco diva")

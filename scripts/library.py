@@ -76,7 +76,6 @@ def data_splitter(freq_data):
   # compute logarithmic cutoffs
   # last_row = halved_data.iloc[length - 1].index
   last_row = length - 1
-  print(last_row)
   max_log = np.log10(last_row)
   bass_cutoff = int(10**(max_log*(1/3)) + 20) # can be tuned
   mid_cutoff = int(20 + 10**(max_log*(2/3))) # can be tuned
@@ -180,6 +179,7 @@ def plot_volumes(input):
     input (string): file path to .wav audio file to be used for the rest of
       the functions
   """
+
   input_file(input)
   all_freq_data = create_freq_data()
   bass_data, mid_data, treble_data = data_splitter(all_freq_data)
@@ -194,6 +194,41 @@ def plot_volumes(input):
   plt.plot(t_o_t)
     
   plt.legend(["bass","mid","treble"])
+  plt.show()
+
+  return b_o_t, m_o_t, t_o_t
+
+def draw_record_visual(bot, mot, tot):
+  """"
+  Visualize the different ranges' volume over time the way our mechanism
+  would draw it.
+
+  Args:
+    bot (array): average bass volume over time
+    mot (array): average mid volume over time
+    tot (array): average treble volume over time
+  """
+
+  # total_radius = 6 # inches
+  # bass_radius = 1
+  # mid_radius = bass_radius + total_radius/3
+  # treble_radius = mid_radius + total_radius/3
+
+  data = [bot, mot, tot]
+  radii = [1, 3, 5]
+  avgs = [np.average(bot), np.average(mot), np.average(tot)]
+
+  fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+
+  for i in range(3):
+    # find variation of each datapoint from average and normalize it
+    radius_var = (data[i] - avgs[i])/np.ptp(data[i])
+    r = radii[i] + radius_var
+
+    theta = np.linspace(0, 2*np.pi, len(data[i]), True)
+
+    ax.plot(theta, r)
+
   plt.show()
 
 if __name__ == "main" :

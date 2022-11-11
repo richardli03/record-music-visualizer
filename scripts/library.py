@@ -13,7 +13,7 @@ import pdb
 
 # keeps track of whether to read all_freq_data from a csv or make it again
 # (makes runtime a lot shorter)
-FROM_CSV = True 
+# FROM_CSV = True 
 
 def input_file(audio):
     """
@@ -131,7 +131,7 @@ def compute_volumes(subset_freq):
     
   return average
 
-def create_freq_data():
+def create_freq_data(FROM_CSV):
   """
   Put all the data from the song into a data frame with time (which is in
   samples) along the columns and frequencies as the rows.
@@ -169,7 +169,7 @@ def create_csv(data):
   data.to_csv("all_freq_data.csv")
 
 
-def process(input):
+def process(input, FROM_CSV):
   """
   Tie together all the functions so you can start with an audio input
   and get out the data for volume over time for bass, mid, and treble.
@@ -177,10 +177,12 @@ def process(input):
   Args:
     input (string): file path to .wav audio file to be used for the rest of
       the functions
+    FROM_CSV (bool): True means read from the csv called all_freq_data, False
+      means make the freq. spread and create the csv. This improves runtime.
   """
 
   input_file(input)
-  all_freq_data = create_freq_data()
+  all_freq_data = create_freq_data(FROM_CSV)
   bass_data, mid_data, treble_data = data_splitter(all_freq_data)
     
   b_o_t = compute_volumes(bass_data)

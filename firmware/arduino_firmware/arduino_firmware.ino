@@ -16,17 +16,26 @@ STP -> pin 5
 DIR -> pin 4
 
 DC motor
-ENB -> pin 2
-IN 4 -> pin 3
+IN 1 -> pin 1
+IN 2 -> pin 3
+ENB -> pin 2 (pwm)
 */
 
 #include <Arduino.h>
+#include <L298N.h>
 #include "BasicStepperDriver.h"
+
+// *** DC motor setup ***
+const unsigned int IN1 = 1;
+const unsigned int IN2 = 3;
+const unsigned int EN = 2;
+L298N DCmotor(EN, IN1, IN2);
+
+// *** stepper motor setup ***
 
 // Motor steps per full revolution (200 steps or 1.8 degrees/step)
 #define MOTOR_STEPS 200
 #define RPM 120
-
 // microstepping (1 = full step aka no microstepping)
 #define MICROSTEPS 1
 
@@ -46,10 +55,22 @@ void loop() {
   }
   String command = Serial.readStringUntil('\n');  // read until timeout
   Serial.print(command);
+    // set stepper motor rotation with `s1 N` where N is degrees of rotation
   if (command.startsWith("s1")) {
     int deg = command.substring(command.indexOf(" ") + 1, command.length()).toInt();
     stepper1.rotate(deg);
+
+    // set DC motor speed with `dc N` where N between 0-255
   } else if (command.startsWith("dc")) {
-    Serial.println("DC Motor Time!");
+    unsigned short speed = command.substring(command.indexOf(" ") + 1, command.length()).toInt();
+    DCmotor.setSpeed(speed);
+    DCmotor.forward();
+    Serial.println(speed);
+    
+    // stop DC motor with `ds`
+  } else if (command == "ds") {
+    DCmotor.setSpeed(0);
+    DCmotor.forward();
+    Serial.println("STOP");
   }
 }

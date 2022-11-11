@@ -13,7 +13,7 @@ import pdb
 
 # keeps track of whether to read all_freq_data from a csv or make it again
 # (makes runtime a lot shorter)
-FROM_CSV = False 
+FROM_CSV = True 
 
 FREQ_SPLIT_VECTOR = [0.41, 0.58, 0.8] # split, split, ceiling
 

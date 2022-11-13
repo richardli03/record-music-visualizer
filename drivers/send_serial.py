@@ -3,19 +3,36 @@ Functions for sending motor drive commands to the Arduino over a
 serial connection.
 """
 
-import serial
+import serial # pySerial usually comes preinstalled on raspbian
 
-def dc_control():
+arduino = serial.Serial(port='COM4', baudrate=115200, timeout=.1)
+
+def dc_speed(speed):
     """
-    Control the state (on/off) and speed (0-255) of the DC motor.
+    Control the speed of the DC motor.
+
+    Args:
+        speed (int): the motor speed on scale of 0-255
     """
-    pass
+    command = f"dr{speed}"
+    arduino.write(bytes(command, 'utf-8'))
+
+
+def dc_off():
+    """
+    Control the state (on/off) of the DC motor.
+    """
+    arduino.write(bytes("ds", 'utf-8'))
+
 
 def stepper_control(stepper, turn_amount):
     """
     Control any of the stepper motors and how much it will rotate by.
 
-    Note: turn_amount is in degrees at time of programming but might
-    change to # steps
+    Args:
+        stepper (str): which stepper is to be controlled (a, b, c)
+        turn_amount (int): degrees of rotation of stepper motor shaft (note:
+        may change to number of steps)
     """
-    pass
+    command = f"s{stepper}{turn_amount}"
+    arduino.write(bytes(command, 'utf-8'))

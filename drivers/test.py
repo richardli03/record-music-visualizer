@@ -21,10 +21,5 @@ for rotation in rotations:
         send_serial.stepper('a', -45)
         time.sleep(1)
 
-# close_time = time.time() + 15   # close loop after 15 sec
-# while time.time()<close_time:
-#     send_serial.stepper('a', 90)
-#     send_serial.stepper('a', -90)
-
 # dc motor stop
 send_serial.dc_off()

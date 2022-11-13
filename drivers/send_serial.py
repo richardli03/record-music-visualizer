@@ -5,7 +5,7 @@ serial connection.
 
 import serial # pySerial usually comes preinstalled on raspbian
 
-arduino = serial.Serial(port='COM4', baudrate=115200, timeout=.1)
+arduino = serial.Serial(port='/dev/ttyACM0', baudrate=115200, timeout=.1)
 
 def dc_speed(speed):
     """

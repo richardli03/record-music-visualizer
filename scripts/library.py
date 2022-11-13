@@ -32,6 +32,24 @@ def input_file(audio):
     global song_length; song_length = len(song)
     global sample_length; sample_length = 100 # milliseconds
     global num_samples; num_samples = song_length // sample_length
+    
+def input_fps(floating_point_series, sample_rate):
+  """
+  Sets variable defaults for other functions. Loads song.
+
+  Args:
+      floating_point_series (matrix): the floating point series corresponding to the song.
+      sample_rate (int): integer corresponding to the sample rate
+  """
+  global song; global sr
+  song = floating_point_series
+  sr = sample_rate
+
+  global song_length; song_length = len(song)
+  global sample_length; sample_length = 100 # milliseconds
+  global num_samples; num_samples = song_length // sample_length
+    
+    
 
 def make_freq_spread(x, Fs, plot):
     """
@@ -102,7 +120,7 @@ def weighted_avg(freqs):
   val_weights = []
   
   for val in freqs:
-    if val < -75: # filter out quiet/ambient noise
+    if val < -90: # filter out quiet/ambient noise
       weight = 0.01
     if val > -50: # weight actual signals so they show 
       weight = 3
@@ -172,7 +190,7 @@ def create_csv(data):
   data.to_csv("all_freq_data.csv")
 
 
-def process(input, FROM_CSV):
+def process(input, FROM_CSV = False, sample_rate = 1):
   """
   Tie together all the functions so you can start with an audio input
   and get out the data for volume over time for bass, mid, and treble.
@@ -182,9 +200,18 @@ def process(input, FROM_CSV):
       the functions
     FROM_CSV (bool): True means read from the csv called all_freq_data, False
       means make the freq. spread and create the csv. This improves runtime.
+      Defaults to False.
   """
-
-  input_file(input)
+  if type(input) == str:
+    input_file(input)
+    
+  else:
+    if sample_rate == 1:
+      print("input valid sample rate")
+      return
+    
+    input_fps(input, sample_rate)
+  
   all_freq_data = create_freq_data(FROM_CSV)
   bass_data, mid_data, treble_data = data_splitter(all_freq_data)
     
@@ -204,7 +231,7 @@ def plot_volume(bot, mot, tot):
     tot (array): average treble volume over time
   """
 
-  plt.plot(bot)
+  plt.plot(bot)     
   plt.plot(mot)
   plt.plot(tot)
     

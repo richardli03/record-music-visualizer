@@ -226,22 +226,30 @@ def draw_record_visual(bot, mot, tot):
   radii = [1, 3, 5] # baseline radii (no var) for each bucket
   avgs = [np.average(bot), np.average(mot), np.average(tot)]
 
-  # fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+  
+  column_labels=['theta_bass', 'r_bass', 'theta_mid', 'r_mid', 'theta_treb', 'r_treb']
+  final_data = pd.DataFrame(columns=column_labels)
+
+  final_data_array = []
 
   for i in range(3):
     # find variation of each datapoint from average and normalize it
     radius_var = (data[i] - avgs[i])/np.ptp(data[i])
+    theta = np.linspace(0, 2*np.pi, len(data[i]), True)
     r = radii[i] + radius_var
 
-    theta = np.linspace(0, 2*np.pi, len(data[i]), True)
-
     plt.polar(theta, r)
+
+    final_data_array.insert(i*2, theta)
+    final_data_array.insert((i*2)+1, r)
 
   plt.grid(False)
   plt.yticks([])
   plt.xticks([])
 
   plt.show()
+
+  return final_data_array
 
 if __name__ == "main" :
     print("a funky fresh disco diva")

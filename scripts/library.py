@@ -216,18 +216,12 @@ def draw_record_visual(bot, mot, tot):
   """
 
   data = [bot, mot, tot]
-  # changing from using radius to using radius_var for motor position data,
-  # but still want radius for plotting purposes
   radii = [1, 3, 5] # baseline radii (no var) for each bucket
   avgs = [np.average(bot), np.average(mot), np.average(tot)]
 
   radius_labels = ['r_bass', 'r_mid', 'r_treb']
-  degrees = np.linspace(0, 360, np.size(bot), True) # this needs to be the 
-  # number of points that is the size of bot; for some reason, it will be of
-  # an inconsistent size with r if you use num_samples instead. not sure why
-  # this isn't num_samples, also.
+  degrees = np.linspace(0, 360, num_samples, True)
   final_data = pd.DataFrame(index=degrees)
-
 
   for i in range(3):
     # find variation of each datapoint from average and normalize it

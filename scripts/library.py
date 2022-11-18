@@ -79,7 +79,7 @@ def data_splitter(freq_data):
   last_row = length - 1
   max_log = np.log10(last_row)
   bass_cutoff = int(10**(max_log*(FREQ_SPLIT_VECTOR[0]))) # can be tuned
-  mid_cutoff = int(20 + 10**(max_log*(FREQ_SPLIT_VECTOR[1]))) # can be tuned
+  mid_cutoff = int(10**(max_log*(FREQ_SPLIT_VECTOR[1]))) # can be tuned
   treb_cutoff = int(10**(max_log*(FREQ_SPLIT_VECTOR[2]))) # ceiling for frequencies
   
   # split data
@@ -104,7 +104,7 @@ def weighted_avg(freqs):
   for val in freqs:
     if val < -75: # filter out quiet/ambient noise
       weight = 0.01
-    if val > -50: # weight actual signals so they show 
+    elif val > -50: # weight actual signals so they show 
       weight = 3
     else:
       weight = 1
@@ -112,10 +112,10 @@ def weighted_avg(freqs):
     val_weights.append(val*weight)
     weights.append(weight)
     
-  # if every signal was < -70 dB
-  if len(set(weights)) == 1:
+  # if every signal was < -75 dB
+  if len(set(weights)) == 1 and weights[0] == 0.01:
     return -100
-  
+
   return sum(val_weights)/sum(weights)
         
 def compute_volumes(subset_freq):
@@ -150,7 +150,7 @@ def create_freq_data(FROM_CSV):
   if FROM_CSV:
     all_freq_data = pd.read_csv('all_freq_data.csv')
   else:
-    samples = np.linspace(0, song_length, int(song_length//num_samples), dtype = "int") # create a linspace for time (by sample)
+    samples = np.linspace(0, song_length, num_samples, dtype = "int") # create a linspace for time (by sample)
 
     all_freq_data = pd.DataFrame(columns = samples)
 
@@ -158,19 +158,9 @@ def create_freq_data(FROM_CSV):
       freq_data, freq_space = make_freq_spread(song[samples[i]:samples[i+1]], sr, False)
       all_freq_data[sample] = pd.Series(l.amplitude_to_db(freq_data))
 
-    create_csv(all_freq_data)  
+    all_freq_data.to_csv("all_freq_data.csv")
 
-  return all_freq_data
-
-def create_csv(data):
-  """
-  Save all_freq_data from create_freq_data as a csv.
-
-  Args:
-    None
-  """
-  data.to_csv("all_freq_data.csv")
-
+  return all_freq_data  
 
 def process(input, FROM_CSV):
   """
@@ -187,6 +177,9 @@ def process(input, FROM_CSV):
   input_file(input)
   all_freq_data = create_freq_data(FROM_CSV)
   bass_data, mid_data, treble_data = data_splitter(all_freq_data)
+  bass_data.to_csv('bass_data.csv')
+  mid_data.to_csv('mid_data.csv')
+  treble_data.to_csv('treb_data.csv')
     
   b_o_t = compute_volumes(bass_data)
   m_o_t = compute_volumes(mid_data)
@@ -242,12 +235,10 @@ def draw_record_visual(bot, mot, tot):
     if np.ptp(data[i]) == 0:
       radius_var = np.zeros(np.size(data[i]))
     else:
-      radius_var = 1/((data[i] - avgs[i])/np.ptp(data[i]))
+      radius_var = (data[i] - avgs[i])/np.ptp(data[i])
     r = (radii[i] * np.ones(len(radius_var))) + radius_var
 
     plt.polar(degrees, r)
-
-    # final_data[radius_labels[i]] = r
     final_data.insert(i, radius_labels[i], radius_var)
 
   plt.grid(False)

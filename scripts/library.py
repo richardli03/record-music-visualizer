@@ -15,7 +15,7 @@ import pdb
 # (makes runtime a lot shorter)
 # FROM_CSV = True 
 
-FREQ_SPLIT_VECTOR = [0.41, 0.58, 0.8] # split, split, ceiling
+FREQ_SPLIT_VECTOR = [0.44, 0.58, 0.8] # split, split, ceiling
 
 def input_file(audio):
     """
@@ -120,7 +120,7 @@ def weighted_avg(freqs):
   val_weights = []
   
   for val in freqs:
-    if val < -90: # filter out quiet/ambient noise
+    if val < -75: # filter out quiet/ambient noise
       weight = 0.01
     if val > -50: # weight actual signals so they show 
       weight = 3
@@ -167,6 +167,7 @@ def create_freq_data(FROM_CSV):
   """
   if FROM_CSV:
     all_freq_data = pd.read_csv('all_freq_data.csv')
+    
   else:
     samples = np.linspace(0, song_length, int(song_length//num_samples), dtype = "int") # create a linspace for time (by sample)
 

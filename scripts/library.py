@@ -223,6 +223,8 @@ def draw_record_visual(bot, mot, tot):
   """
 
   data = [bot, mot, tot]
+  # changing from using radius to using radius_var for motor position data,
+  # but still want radius for plotting purposes
   radii = [1, 3, 5] # baseline radii (no var) for each bucket
   avgs = [np.average(bot), np.average(mot), np.average(tot)]
 
@@ -240,13 +242,13 @@ def draw_record_visual(bot, mot, tot):
     if np.ptp(data[i]) == 0:
       radius_var = np.zeros(np.size(data[i]))
     else:
-      radius_var = (data[i] - avgs[i])/np.ptp(data[i])
+      radius_var = 1/((data[i] - avgs[i])/np.ptp(data[i]))
     r = (radii[i] * np.ones(len(radius_var))) + radius_var
 
     plt.polar(degrees, r)
 
     # final_data[radius_labels[i]] = r
-    final_data.insert(i, radius_labels[i], r)
+    final_data.insert(i, radius_labels[i], radius_var)
 
   plt.grid(False)
   plt.yticks([])

@@ -226,22 +226,27 @@ def draw_record_visual(bot, mot, tot):
   radii = [1, 3, 5] # baseline radii (no var) for each bucket
   avgs = [np.average(bot), np.average(mot), np.average(tot)]
 
-  
-  column_labels=['theta_bass', 'r_bass', 'theta_mid', 'r_mid', 'theta_treb', 'r_treb']
-  final_data = pd.DataFrame(columns=column_labels)
+  radius_labels = ['r_bass', 'r_mid', 'r_treb']
+  degrees = np.linspace(0, 360, np.size(bot), True) # this needs to be the 
+  # number of points that is the size of bot; for some reason, it will be of
+  # an inconsistent size with r if you use num_samples instead. not sure why
+  # this isn't num_samples, also.
+  final_data = pd.DataFrame(index=degrees)
 
-  final_data_array = []
 
   for i in range(3):
     # find variation of each datapoint from average and normalize it
-    radius_var = (data[i] - avgs[i])/np.ptp(data[i])
-    theta = np.linspace(0, 2*np.pi, len(data[i]), True)
-    r = radii[i] + radius_var
+    # divides by the range of values in that data set
+    if np.ptp(data[i]) == 0:
+      radius_var = np.zeros(np.size(data[i]))
+    else:
+      radius_var = (data[i] - avgs[i])/np.ptp(data[i])
+    r = (radii[i] * np.ones(len(radius_var))) + radius_var
 
-    plt.polar(theta, r)
+    plt.polar(degrees, r)
 
-    final_data_array.insert(i*2, theta)
-    final_data_array.insert((i*2)+1, r)
+    # final_data[radius_labels[i]] = r
+    final_data.insert(i, radius_labels[i], r)
 
   plt.grid(False)
   plt.yticks([])
@@ -249,7 +254,7 @@ def draw_record_visual(bot, mot, tot):
 
   plt.show()
 
-  return final_data_array
+  return final_data
 
 if __name__ == "main" :
     print("a funky fresh disco diva")

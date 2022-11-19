@@ -204,6 +204,19 @@ def plot_volume(bot, mot, tot):
   plt.legend(["bass","mid","treble"])
   plt.show()
 
+def scale_data(pos_data):
+  """
+  Scales data so it goes from -1 to 1.
+
+  Args:
+    pos_data (pandas dataframe): has four columns, the first for radians,
+      and then one for the radius of each bucket. the indices are times.
+  """
+  largest_value = np.max(abs(pos_data))
+  scale_factor = 1/largest_value
+
+  return pos_data * scale_factor
+
 def draw_record_visual(bot, mot, tot):
   """"
   Visualize the different ranges' volume over time the way our mechanism
@@ -220,8 +233,8 @@ def draw_record_visual(bot, mot, tot):
   avgs = [np.average(bot), np.average(mot), np.average(tot)]
 
   radius_labels = ['r_bass', 'r_mid', 'r_treb']
-  degrees = np.linspace(0, 360, num_samples, True)
-  final_data = pd.DataFrame(index=degrees)
+  radians = np.linspace(0, 2*np.pi, num_samples, True)
+  final_data = pd.DataFrame(index=radians)
 
   for i in range(3):
     # find variation of each datapoint from average and normalize it
@@ -232,8 +245,10 @@ def draw_record_visual(bot, mot, tot):
       radius_var = (data[i] - avgs[i])/np.ptp(data[i])
     r = (radii[i] * np.ones(len(radius_var))) + radius_var
 
-    plt.polar(degrees, r)
+    plt.polar(radians, r)
     final_data.insert(i, radius_labels[i], radius_var)
+
+  final_data = scale_data(final_data)
 
   plt.grid(False)
   plt.yticks([])

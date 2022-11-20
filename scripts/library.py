@@ -271,7 +271,7 @@ def plot_polar(pos_data):
       variations for each bucket in the next columns.
   """
 
-  radii = [5, 3, 1] # baseline radii (no var) for each bucket
+  radii = [1, 3, 5] # baseline radii (no var) for each bucket
 
   radians = pos_data.index
 
@@ -283,11 +283,11 @@ def plot_polar(pos_data):
 
     plt.polar(radians, r)
 
-    plt.grid(False)
-    plt.yticks([])
-    plt.xticks([])
+  plt.grid(False)
+  plt.yticks([])
+  plt.xticks([])
 
-    plt.show()
+  plt.show()
 
 def create_record_visual_data(bot, mot, tot, to_draw):
   """"
@@ -321,7 +321,10 @@ def create_record_visual_data(bot, mot, tot, to_draw):
     
     pos_data.insert(i, radius_labels[i], radius_var)
 
-  scaled_data = scale_data(pos_data)
+  # remove first row before scaling it because that always has a weirdly high value
+  sliced_pos_data = pos_data.iloc[1:]
+  pdb.set_trace()
+  scaled_data = scale_data(sliced_pos_data)
 
   final_data = create_osciallations(scaled_data)
 

@@ -2,8 +2,8 @@ import library as lib
 
 def main():
   
-  INPUT_FILE = "../assets/bass.wav" # audio input
-  bot, mot, tot = lib.process(INPUT_FILE, True)
+  INPUT_FILE = "../assets/365.wav" # audio input
+  bot, mot, tot = lib.process(INPUT_FILE, False)
   # lib.plot_volume(bot, mot, tot)
   data = lib.create_record_visual_data(bot, mot, tot, True)
   data.to_csv('pos_data.csv')

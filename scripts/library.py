@@ -30,7 +30,7 @@ def input_file(audio):
     song, sr = l.load(INPUT_FILE, mono = True)
 
     global song_length; song_length = len(song)
-    global sample_length; sample_length = 100 # milliseconds
+    global sample_length; sample_length = 30000 # milliseconds
     global num_samples; num_samples = song_length // sample_length
 
 def make_freq_spread(x, Fs, plot):
@@ -323,7 +323,6 @@ def create_record_visual_data(bot, mot, tot, to_draw):
 
   # remove first row before scaling it because that always has a weirdly high value
   sliced_pos_data = pos_data.iloc[1:]
-  pdb.set_trace()
   scaled_data = scale_data(sliced_pos_data)
 
   final_data = create_osciallations(scaled_data)

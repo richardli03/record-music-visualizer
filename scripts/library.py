@@ -212,12 +212,84 @@ def scale_data(pos_data):
     pos_data (pandas dataframe): has four columns, the first for radians,
       and then one for the radius of each bucket. the indices are times.
   """
-  largest_value = np.max(abs(pos_data))
+
+  largest_value = pos_data.abs().max().max()
   scale_factor = 1/largest_value
 
   return pos_data * scale_factor
 
-def draw_record_visual(bot, mot, tot):
+def create_osciallations(pos_data):
+  """
+  Takes basic volume over time data for each bucket and adds in oscillations
+  to make it more visually representative.
+
+  Args:
+    pos_data (pandas dataframe): has radians in the first column and radius
+      variation data for each bucket in the following columns.
+  """
+
+  # going to create twice as many data points as original so we can create
+  # waves using the extra datapoints
+  new_radians = np.linspace(0, 2*np.pi, len(pos_data.iloc[:,0]) * 2)
+  final_data = pd.DataFrame(index=new_radians)
+  baseline_amplitude = 0.2 # amplitude of band of 0 data. also the threshold for 0 data.
+  osc_sign = -1 # flips with every data point to create oscillations
+
+  for c in pos_data:
+    column = pos_data[c]
+    r = []
+    
+    for i in range(len(column)-1):
+      current = column.iloc[i]
+      next = column.iloc[i+1]
+
+      r.append(current) # add current radius datapoint to new radius list
+
+      # add in the intermediate point between two current datapoints (with the
+      # correct sign)
+      if current < baseline_amplitude and next < baseline_amplitude:
+        r.append(baseline_amplitude * osc_sign)
+        osc_sign = -osc_sign
+      else:
+        sign = current/abs(current) * -1
+        r.append(baseline_amplitude * sign)
+
+    # add the last two values (that we can't index through the loop)
+    r.append(current)
+    r.append(r[0])
+
+    final_data.insert(len(final_data.columns), column.name, r)
+
+  return final_data
+
+def plot_polar(pos_data):
+  """
+  Takes position data that's sent to the servos and plots it.
+
+  Args:
+    pos_data (pandas dataframe): has radians in the first column and radius
+      variations for each bucket in the next columns.
+  """
+
+  radii = [5, 3, 1] # baseline radii (no var) for each bucket
+
+  radians = pos_data.index
+
+  for i in range(3):
+    column = pos_data.iloc[:, i]
+    baseline_radius = radii[i]
+
+    r = column + baseline_radius
+
+    plt.polar(radians, r)
+
+    plt.grid(False)
+    plt.yticks([])
+    plt.xticks([])
+
+    plt.show()
+
+def create_record_visual_data(bot, mot, tot, to_draw):
   """"
   Visualize the different ranges' volume over time the way our mechanism
   would draw it.
@@ -226,35 +298,35 @@ def draw_record_visual(bot, mot, tot):
     bot (array): average bass volume over time
     mot (array): average mid volume over time
     tot (array): average treble volume over time
+    to_draw (bool): controls whether to plot it or not
   """
 
   data = [bot, mot, tot]
-  radii = [1, 3, 5] # baseline radii (no var) for each bucket
   avgs = [np.average(bot), np.average(mot), np.average(tot)]
 
   radius_labels = ['r_bass', 'r_mid', 'r_treb']
   radians = np.linspace(0, 2*np.pi, num_samples, True)
-  final_data = pd.DataFrame(index=radians)
+  pos_data = pd.DataFrame(index=radians)
 
   for i in range(3):
+
     # find variation of each datapoint from average and normalize it
     # divides by the range of values in that data set
     if np.ptp(data[i]) == 0:
-      radius_var = np.zeros(np.size(data[i]))
+      radius_var = np.zeros(num_samples)
     else:
       radius_var = (data[i] - avgs[i])/np.ptp(data[i])
-    r = (radii[i] * np.ones(len(radius_var))) + radius_var
+      radius_var = radius_var[:num_samples]
+      # note, chopping radius_var might cause problems later
+    
+    pos_data.insert(i, radius_labels[i], radius_var)
 
-    plt.polar(radians, r)
-    final_data.insert(i, radius_labels[i], radius_var)
+  scaled_data = scale_data(pos_data)
 
-  final_data = scale_data(final_data)
+  final_data = create_osciallations(scaled_data)
 
-  plt.grid(False)
-  plt.yticks([])
-  plt.xticks([])
-
-  plt.show()
+  if to_draw:
+    plot_polar(final_data)
 
   return final_data
 

@@ -16,8 +16,8 @@ STP (green) -> pin 13
 
 DC Motor
 IN 1 (mark) -> pin 4
-IN 2 (blue) -> pin 3
-ENB (black) -> pin 2 (pwm)
+IN 2 (blue) -> pin 2
+ENB (black) -> pin 3 (pwm)
 */
 
 #include <Arduino.h>
@@ -40,23 +40,23 @@ L298N DCmotor(EN, IN1, IN2);
 #define STEP1 9
 BasicStepperDriver stepper1(MOTOR_STEPS, DIR1, STEP1);
 
-// uncomment to include multi-servo functionality (1/2)
+// stepper 2
+#define DIR2 10
+#define STEP2 11
+BasicStepperDriver stepper2(MOTOR_STEPS, DIR2, STEP2);
 
-// // stepper 2
-// #define DIR2 10
-// #define STEP2 11
-// BasicStepperDriver stepper2(MOTOR_STEPS, DIR2, STEP2);
-
-// // stepper 2
-// #define DIR2 12
-// #define STEP2 13
-// BasicStepperDriver stepper3(MOTOR_STEPS, DIR3, STEP3);
+// stepper 3
+#define DIR3 12
+#define STEP3 13
+BasicStepperDriver stepper3(MOTOR_STEPS, DIR3, STEP3);
 
 //
 void setup() {
   // initialize serial communication
   Serial.begin(115200);
   stepper1.begin(RPM, MICROSTEPS);
+  stepper2.begin(RPM, MICROSTEPS);
+  stepper3.begin(RPM, MICROSTEPS);
 }
 void loop() {
   String command;
@@ -66,36 +66,30 @@ void loop() {
   // commands start with '(' and end with ')' to avoid garbage characters
   if (Serial.read() == '(') {
     command = Serial.readStringUntil(')');
-
+    Serial.println(command);
     // DC motor run with `drN` where N is speed between 0-255
     if (command.startsWith("dr")) {
       unsigned short speed = command.substring(2, command.length()).toInt();
       DCmotor.setSpeed(speed);
       DCmotor.forward();
-      Serial.println(speed);
       // stop DC motor with `ds`
     } else if (command == "ds") {
       DCmotor.setSpeed(0);
       DCmotor.forward();
-      Serial.println("STOP");
     }
     // set stepper motor rotation with `saN` where N is degrees of rotation and
-    // characters a-b refers to motors 1-3 repectivly
+    // characters a-c refers to motors 1-3 repectivly
     else if (command.startsWith("sa")) {
       int deg = command.substring(2, command.length()).toInt();
       stepper1.rotate(deg);
-      Serial.println(deg);
     }
-
-    // uncomment to include multi-servo functionality (2/2)
-
-    // else if (command.startsWith("sb")) {
-    //   int deg = command.substring(2, command.length()).toInt();
-    //   stepper2.rotate(deg);
-    // }
-    // else if (command.startsWith("sc")) {
-    //   int deg = command.substring(2, command.length()).toInt();
-    //   stepper3.rotate(deg);
-    // }
+    else if (command.startsWith("sb")) {
+      int deg = command.substring(2, command.length()).toInt();
+      stepper2.rotate(deg);
+    }
+    else if (command.startsWith("sc")) {
+      int deg = command.substring(2, command.length()).toInt();
+      stepper3.rotate(deg);
+    }
   }
 }

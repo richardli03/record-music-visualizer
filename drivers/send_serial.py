@@ -37,3 +37,6 @@ def stepper(stepper, turn_amount):
     """
     command = f"(s{stepper}{turn_amount})"
     arduino.write(bytes(command, 'utf-8'))
+    
+if __name__ == "__main__": 
+    print(":)")

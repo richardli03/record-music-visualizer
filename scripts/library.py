@@ -30,7 +30,7 @@ def input_file(audio):
     song, sr = l.load(INPUT_FILE, mono = True)
 
     global song_length; song_length = len(song)
-    global sample_length; sample_length = 30000 # milliseconds
+    global sample_length; sample_length = 1000 # milliseconds
     global num_samples; num_samples = song_length // sample_length
 
 def make_freq_spread(x, Fs, plot):
@@ -286,6 +286,15 @@ def plot_polar(pos_data):
   plt.grid(False)
   plt.yticks([])
   plt.xticks([])
+
+  # extracts the name of the audio bit to title the plot
+  t = INPUT_FILE[INPUT_FILE.rfind('assets/') + 7:-4]
+  plt.title(t)
+
+  # gives you a choice whether to save it or not
+  file_name = input('Do you want to save this image? Enter "no" or a filename.')
+  if file_name != 'no':
+    plt.savefig('../assets/imgs/' + file_name + '.png')
 
   plt.show()
 

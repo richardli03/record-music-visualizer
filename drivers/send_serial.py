@@ -34,5 +34,10 @@ def stepper(stepper, steps):
         stepper (str): which stepper is to be controlled (a, b, c)
         turn_amount (int): steps of rotation (1.8 degrees per step)
     """
+
     command = f"(s{stepper}{steps})"
     arduino.write(bytes(command, 'utf-8'))
+
+if __name__ == "__main__": 
+    print(":)")
+

@@ -26,14 +26,13 @@ def dc_off():
     arduino.write(bytes("(ds)", 'utf-8'))
 
 
-def stepper(stepper, turn_amount):
+def stepper(stepper, steps):
     """
     Control any of the stepper motors and how much it will rotate by.
 
     Args:
         stepper (str): which stepper is to be controlled (a, b, c)
-        turn_amount (int): degrees of rotation of stepper motor shaft (note:
-        may change to number of steps)
+        turn_amount (int): steps of rotation (1.8 degrees per step)
     """
-    command = f"(s{stepper}{turn_amount})"
+    command = f"(s{stepper}{steps})"
     arduino.write(bytes(command, 'utf-8'))

@@ -65,22 +65,22 @@ void loop() {
       if (command.startsWith("sa")) {
         long steps = command.substring(2, command.length()).toInt();
         // move stepper `steps` steps
-        stepperA.moveTo(stepperA.currentPosition() + steps);  // set target position
-        stepperA.setSpeed(1100);   // must set speed after moveTo to get rid of accl
+        stepperA.move(steps);     // set relative target position
+        stepperA.setSpeed(1100);  // must set speed after moveTo to get rid of accl
       }
       // B stepper
       else if (command.startsWith("sb")) {
         long steps = command.substring(2, command.length()).toInt();
         // move stepper `steps` steps
-        stepperB.moveTo(stepperB.currentPosition() + steps);  // set target position
-        stepperB.setSpeed(1100);   // must set speed after moveTo to get rid of accl
+        stepperB.move(steps);     // set relative target position
+        stepperB.setSpeed(1100);  // must set speed after moveTo to get rid of accl
       }
       // C stepper
       else if (command.startsWith("sc")) {
         long steps = command.substring(2, command.length()).toInt();
         // move stepper `steps` steps
-        stepperC.moveTo(stepperC.currentPosition() + steps);  // set target position
-        stepperC.setSpeed(1100);   // must set speed after moveTo to get rid of accl
+        stepperC.move(steps);     // set relative target position
+        stepperC.setSpeed(1100);  // must set speed after moveTo to get rid of accl
       }
       // DC motor run with `drN` where N is speed between 0-255
       else if (command.startsWith("dr")) {
@@ -88,7 +88,7 @@ void loop() {
         DCmotor.setSpeed(speed);
         DCmotor.forward();
 
-      // stop DC motor with `ds`
+        // stop DC motor with `ds`
       } else if (command == "ds") {
         DCmotor.setSpeed(0);
         DCmotor.forward();

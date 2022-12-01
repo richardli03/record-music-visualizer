@@ -2,15 +2,15 @@
 using DRV8825 stepper drivers and a L298N H-bridge for the DC motor.
 pins listed below for sanity:
 
-Stepper Motor 1:
+Stepper Motor A:
 DIR (blue)  -> pin 8
 STP (green) -> pin 9
 
-Stepper Motor 2
+Stepper Motor B:
 DIR (blue)  -> pin 10
 STP (green) -> pin 11
 
-Stepper Motor 3
+Stepper Motor C:
 DIR (blue)  -> pin 12
 STP (green) -> pin 13
 
@@ -22,7 +22,7 @@ ENB (black) -> pin 3 (pwm)
 
 #include <Arduino.h>
 #include <L298N.h>
-#include "BasicStepperDriver.h"
+#include <AccelStepper.h>
 
 // *** DC motor setup ***
 const unsigned int IN1 = 4;
@@ -31,65 +31,68 @@ const unsigned int EN = 3;
 L298N DCmotor(EN, IN1, IN2);
 
 // *** stepper motor setup ***
-#define MOTOR_STEPS 200  // motor steps per full revolution (200 steps or 1.8 degrees/step)
-#define RPM 120          // rotations per minute
-#define MICROSTEPS 1     // microstepping (1 = full step aka no microstepping)
+AccelStepper stepperA(AccelStepper::DRIVER, 9, 8);    // stp = 9, dir = 8
+AccelStepper stepperB(AccelStepper::DRIVER, 11, 10);  // stp = 11, dir = 10
+AccelStepper stepperC(AccelStepper::DRIVER, 13, 12);  // stp = 13, dir = 12
 
-// stepper 1
-#define DIR1 8
-#define STEP1 9
-BasicStepperDriver stepper1(MOTOR_STEPS, DIR1, STEP1);
 
-// stepper 2
-#define DIR2 10
-#define STEP2 11
-BasicStepperDriver stepper2(MOTOR_STEPS, DIR2, STEP2);
-
-// stepper 3
-#define DIR3 12
-#define STEP3 13
-BasicStepperDriver stepper3(MOTOR_STEPS, DIR3, STEP3);
-
-//
 void setup() {
   // initialize serial communication
   Serial.begin(115200);
-  stepper1.begin(RPM, MICROSTEPS);
-  stepper2.begin(RPM, MICROSTEPS);
-  stepper3.begin(RPM, MICROSTEPS);
+
+  // maximum speed in steps per second
+  stepperA.setMaxSpeed(1100);
+  stepperB.setMaxSpeed(1100);
+  stepperC.setMaxSpeed(1100);
 }
+
+
 void loop() {
+  // if a stepper has a target destination remaining, step 1 step
+  stepperA.runSpeedToPosition();
+  stepperB.runSpeedToPosition();
+  stepperC.runSpeedToPosition();
+
+  // *** check and process serial command if needed ***
   String command;
-  while (Serial.available() == 0) {
-    // wait for data available in serial receive buffer
-  }
-  // commands start with '(' and end with ')' to avoid garbage characters
-  if (Serial.read() == '(') {
-    command = Serial.readStringUntil(')');
-    Serial.println(command);
-    // DC motor run with `drN` where N is speed between 0-255
-    if (command.startsWith("dr")) {
-      unsigned short speed = command.substring(2, command.length()).toInt();
-      DCmotor.setSpeed(speed);
-      DCmotor.forward();
-      // stop DC motor with `ds`
-    } else if (command == "ds") {
-      DCmotor.setSpeed(0);
-      DCmotor.forward();
-    }
-    // set stepper motor rotation with `saN` where N is degrees of rotation and
-    // characters a-c refers to motors 1-3 repectivly
-    else if (command.startsWith("sa")) {
-      int deg = command.substring(2, command.length()).toInt();
-      stepper1.rotate(deg);
-    }
-    else if (command.startsWith("sb")) {
-      int deg = command.substring(2, command.length()).toInt();
-      stepper2.rotate(deg);
-    }
-    else if (command.startsWith("sc")) {
-      int deg = command.substring(2, command.length()).toInt();
-      stepper3.rotate(deg);
+  if (Serial.available() != 0) {  // if data available in serial receive buffer
+    // commands start with '(' and end with ')' to avoid garbage characters
+    if (Serial.read() == '(') {
+      command = Serial.readStringUntil(')');
+      Serial.println(command);
+
+      // A stepper
+      if (command.startsWith("sa")) {
+        long steps = command.substring(2, command.length()).toInt();
+        // move stepper `steps` steps
+        stepperA.move(steps);     // set relative target position
+        stepperA.setSpeed(1100);  // must set speed after moveTo to get rid of accl
+      }
+      // B stepper
+      else if (command.startsWith("sb")) {
+        long steps = command.substring(2, command.length()).toInt();
+        // move stepper `steps` steps
+        stepperB.move(steps);     // set relative target position
+        stepperB.setSpeed(1100);  // must set speed after moveTo to get rid of accl
+      }
+      // C stepper
+      else if (command.startsWith("sc")) {
+        long steps = command.substring(2, command.length()).toInt();
+        // move stepper `steps` steps
+        stepperC.move(steps);     // set relative target position
+        stepperC.setSpeed(1100);  // must set speed after moveTo to get rid of accl
+      }
+      // DC motor run with `drN` where N is speed between 0-255
+      else if (command.startsWith("dr")) {
+        unsigned short speed = command.substring(2, command.length()).toInt();
+        DCmotor.setSpeed(speed);
+        DCmotor.forward();
+
+        // stop DC motor with `ds`
+      } else if (command == "ds") {
+        DCmotor.setSpeed(0);
+        DCmotor.forward();
+      }
     }
   }
 }

@@ -35,7 +35,6 @@ AccelStepper stepperA(AccelStepper::DRIVER, 9, 8);    // stp = 9, dir = 8
 AccelStepper stepperB(AccelStepper::DRIVER, 11, 10);  // stp = 11, dir = 10
 AccelStepper stepperC(AccelStepper::DRIVER, 13, 12);  // stp = 13, dir = 12
 
-
 void setup() {
   // initialize serial communication
   Serial.begin(115200);
@@ -45,7 +44,6 @@ void setup() {
   stepperB.setMaxSpeed(1100);
   stepperC.setMaxSpeed(1100);
 }
-
 
 void loop() {
   // if a stepper has a target destination remaining, step 1 step
@@ -64,9 +62,14 @@ void loop() {
       // A stepper
       if (command.startsWith("sa")) {
         long steps = command.substring(2, command.length()).toInt();
-        // move stepper `steps` steps
-        stepperA.move(steps);     // set relative target position
-        stepperA.setSpeed(1100);  // must set speed after moveTo to get rid of accl
+        // don't inturrupt motor if it's running
+        if (stepperA.isRunning == false) {
+          // move stepper `steps` steps
+          stepperA.move(steps);     // set relative target position
+          stepperA.setSpeed(1100);  // must set speed after moveTo to get rid of accl
+        } else {
+          // TODO add to some sort of queue (create an array of backup stuff?)
+        }
       }
       // B stepper
       else if (command.startsWith("sb")) {

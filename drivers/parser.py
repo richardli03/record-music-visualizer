@@ -2,7 +2,7 @@
 turn the DC motor on and spin the servo for a few seconds
 """
 
-import time
+from timeit import default_timer as timer
 from send_serial import *
 import pandas as pd
 
@@ -43,7 +43,6 @@ class Stepper:
         return f"Stepper motor {self._name}"
 
 
-
 def compute_DC_speed(song_length) -> float:
     """
     Given some song length (in seconds), compute
@@ -71,13 +70,16 @@ def theta_to_seconds(theta, song_length):
     
 def main():
     # First thing to do is rotate the thing at the correct speed:
-    song_length = 120 # s || pretend it's a 2 minute song
+    song_length = 2 # s || pretend it's a 2 minute song
     
+    # initialize stepper motors
     bass = Stepper("bass")
     mid = Stepper("mid")
     treble = Stepper("treb")
 
     song_data = pd.read_csv("datasets/pos_data.csv").transpose()
+    
+    # Catch errors
     if song_data.empty:
         print("No song data found!")
         return 
@@ -91,14 +93,14 @@ def main():
     song_data.drop(["theta"], inplace= True, axis = 0)
     song_data = pd.concat([seconds_for_movement, song_data])
     
+    
     # start spinning the disk)
     dc_speed(compute_DC_speed(song_length))
 
-
-   
-    
-    t_start = time.time() # time since Jan 1, 1970 for timer purposes
-    
+    t_start = timer() # time since Jan 1, 1970 for timer purposes
+    b_old = 0
+    m_old = 0
+    t_old = 0
     for sample in num_samples:
         # Split the new row of values into their components
         
@@ -108,15 +110,17 @@ def main():
         
         # i think this should prevent the steppers from moving faster than we want them to. 
         # may need to calibrate some stuff
-        while time.time() - seconds != t_start:
-            print("waiting")
+        while timer() - seconds < t_start:
+            pass
         
         # Get bass, mid, treble frequences
-        bass.move(vals[1])
-        mid.move(vals[2])
-        treble.move(vals[3])      
+        bass.move(vals[1]-b_old)
+        mid.move(vals[2]-m_old)
+        treble.move(vals[3]-t_old)    
         
-        print(bass, mid, treble)
+        b_old = vals[1]
+        m_old = vals[2]
+        t_old = vals[3]  
         
         # Compute the stepper motor movement to correspond with an int
 

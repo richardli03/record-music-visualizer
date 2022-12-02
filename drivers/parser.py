@@ -20,8 +20,8 @@ class Stepper:
             value (_type_): _description_
         """
         move_amount = 1139*value + -17.9
-        move_amount_steps = move_amount * 1.8
-        
+        move_amount_steps = move_amount / 1.8
+        print(move_amount_steps)
         if self._name == "bass":
             # move calibration
             stepper("a", int(move_amount_steps))
@@ -69,8 +69,9 @@ def theta_to_seconds(theta, song_length):
     return theta * sec_per_d
     
 def main():
+    dc_off()
     # First thing to do is rotate the thing at the correct speed:
-    song_length = 2 # s || pretend it's a 2 minute song
+    song_length = 120 # s || pretend it's a 2 minute song
     
     # initialize stepper motors
     bass = Stepper("bass")
@@ -101,6 +102,9 @@ def main():
     b_old = 0
     m_old = 0
     t_old = 0
+    
+    print(song_data)
+    
     for sample in num_samples:
         # Split the new row of values into their components
         
@@ -123,7 +127,7 @@ def main():
         t_old = vals[3]  
         
         # Compute the stepper motor movement to correspond with an int
-
+    dc_off()
 
 if __name__ == "__main__":
     main()

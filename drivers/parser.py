@@ -6,6 +6,9 @@ from timeit import default_timer as timer
 from send_serial import *
 import pandas as pd
 
+# For testing
+stepper_multiplier = 0.7
+
 class Stepper:
     def __init__(self, name):
         self._name = name
@@ -20,8 +23,8 @@ class Stepper:
             value (_type_): _description_
         """
         move_amount = 1139*value + -17.9
-        move_amount_steps = move_amount * 1.8
-        
+        move_amount_steps = move_amount * 1.8 * stepper_multiplier
+
         if self._name == "bass":
             # move calibration
             stepper("a", int(move_amount_steps))
@@ -49,7 +52,12 @@ def compute_DC_speed(song_length) -> float:
     the speed of the DC motor necessary to make that happen
     """
     # line of best fit 
-    motor_speed = 182 + -1.19*song_length + 0.0026*(song_length^2)
+    if song_length > 100:
+        motor_speed = 150 - 0.902*song_length + 0.00204*(song_length^2)
+    else:
+        motor_speed = 1328 - 27.5*song_length + 0.152*(song_length^2)
+        
+
     return motor_speed
 
 def theta_to_seconds(theta, song_length):
@@ -70,14 +78,14 @@ def theta_to_seconds(theta, song_length):
     
 def main():
     # First thing to do is rotate the thing at the correct speed:
-    song_length = 2 # s || pretend it's a 2 minute song
+    song_length = 177 # s || pretend it's a 2 minute song
     
     # initialize stepper motors
     bass = Stepper("bass")
     mid = Stepper("mid")
     treble = Stepper("treb")
 
-    song_data = pd.read_csv("datasets/pos_data.csv").transpose()
+    song_data = pd.read_csv("datasets/herestous.csv").transpose()
     
     # Catch errors
     if song_data.empty:

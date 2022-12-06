@@ -7,7 +7,7 @@ from send_serial import *
 import pandas as pd
 
 # For testing
-stepper_multiplier = 0.7
+stepper_multiplier = 0.25
 
 class Stepper:
     def __init__(self, name):
@@ -53,10 +53,11 @@ def compute_DC_speed(song_length) -> float:
     """
     # line of best fit 
     if song_length > 100:
-        motor_speed = 150 - 0.902*song_length + 0.00204*(song_length^2)
+        motor_speed = 150 - 0.902*song_length + 0.00204*(song_length**2)
     else:
-        motor_speed = 1328 - 27.5*song_length + 0.152*(song_length^2)
-        
+        motor_speed = 1328 - 27.5*song_length + 0.152*(song_length**2)
+
+    print(f"Current DC speed is {motor_speed}")
 
     return motor_speed
 
@@ -79,7 +80,7 @@ def theta_to_seconds(theta, song_length):
 def main():
     dc_off()
     # First thing to do is rotate the thing at the correct speed:
-    song_length = 177 # s || pretend it's a 2 minute song
+    song_length = 60 # s || pretend it's a 2 minute song
     
     # initialize stepper motors
     bass = Stepper("bass")
@@ -126,9 +127,9 @@ def main():
             pass
         
         # Get bass, mid, treble frequences
-        bass.move(vals[1]-b_old)
-        mid.move(vals[2]-m_old)
-        treble.move(vals[3]-t_old)    
+        # bass.move(vals[1]-b_old)
+        # mid.move(vals[2]-m_old)
+        # treble.move(vals[3]-t_old)    
         
         b_old = vals[1]
         m_old = vals[2]

@@ -108,9 +108,9 @@ def main():
     dc_speed(compute_DC_speed(song_length))
 
     t_start = timer() # time since Jan 1, 1970 for timer purposes
-    b_old = 0
-    m_old = 0
-    t_old = 0
+    # b_old = 0
+    # m_old = 0
+    # t_old = 0
     
     print(song_data)
     
@@ -127,13 +127,13 @@ def main():
             pass
         
         # Get bass, mid, treble frequences
-        # bass.move(vals[1]-b_old)
-        # mid.move(vals[2]-m_old)
-        # treble.move(vals[3]-t_old)    
+        bass.move(vals[1])
+        mid.move(vals[2])
+        treble.move(vals[3]) 
         
-        b_old = vals[1]
-        m_old = vals[2]
-        t_old = vals[3]  
+        # b_old = vals[1]
+        # m_old = vals[2]
+        # t_old = vals[3]  
         
         # Compute the stepper motor movement to correspond with an int
     dc_off()

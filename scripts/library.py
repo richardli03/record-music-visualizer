@@ -30,7 +30,7 @@ def input_file(audio):
     song, sr = l.load(INPUT_FILE, mono = True)
 
     global song_length; song_length = len(song)
-    global sample_length; sample_length = 100 # milliseconds
+    global sample_length; sample_length = 1000 # milliseconds
     global num_samples; num_samples = song_length // sample_length
 
 def make_freq_spread(x, Fs, plot):
@@ -79,7 +79,7 @@ def data_splitter(freq_data):
   last_row = length - 1
   max_log = np.log10(last_row)
   bass_cutoff = int(10**(max_log*(FREQ_SPLIT_VECTOR[0]))) # can be tuned
-  mid_cutoff = int(20 + 10**(max_log*(FREQ_SPLIT_VECTOR[1]))) # can be tuned
+  mid_cutoff = int(10**(max_log*(FREQ_SPLIT_VECTOR[1]))) # can be tuned
   treb_cutoff = int(10**(max_log*(FREQ_SPLIT_VECTOR[2]))) # ceiling for frequencies
   
   # split data
@@ -104,7 +104,7 @@ def weighted_avg(freqs):
   for val in freqs:
     if val < -75: # filter out quiet/ambient noise
       weight = 0.01
-    if val > -50: # weight actual signals so they show 
+    elif val > -50: # weight actual signals so they show 
       weight = 3
     else:
       weight = 1
@@ -112,10 +112,10 @@ def weighted_avg(freqs):
     val_weights.append(val*weight)
     weights.append(weight)
     
-  # if every signal was < -70 dB
-  if len(set(weights)) == 1:
+  # if every signal was < -75 dB
+  if len(set(weights)) == 1 and weights[0] == 0.01:
     return -100
-  
+
   return sum(val_weights)/sum(weights)
         
 def compute_volumes(subset_freq):
@@ -150,7 +150,7 @@ def create_freq_data(FROM_CSV):
   if FROM_CSV:
     all_freq_data = pd.read_csv('all_freq_data.csv')
   else:
-    samples = np.linspace(0, song_length, int(song_length//num_samples), dtype = "int") # create a linspace for time (by sample)
+    samples = np.linspace(0, song_length, num_samples, dtype = "int") # create a linspace for time (by sample)
 
     all_freq_data = pd.DataFrame(columns = samples)
 
@@ -158,19 +158,9 @@ def create_freq_data(FROM_CSV):
       freq_data, freq_space = make_freq_spread(song[samples[i]:samples[i+1]], sr, False)
       all_freq_data[sample] = pd.Series(l.amplitude_to_db(freq_data))
 
-    create_csv(all_freq_data)  
+    all_freq_data.to_csv("all_freq_data.csv")
 
-  return all_freq_data
-
-def create_csv(data):
-  """
-  Save all_freq_data from create_freq_data as a csv.
-
-  Args:
-    None
-  """
-  data.to_csv("all_freq_data.csv")
-
+  return all_freq_data  
 
 def process(input, FROM_CSV):
   """
@@ -187,6 +177,9 @@ def process(input, FROM_CSV):
   input_file(input)
   all_freq_data = create_freq_data(FROM_CSV)
   bass_data, mid_data, treble_data = data_splitter(all_freq_data)
+  bass_data.to_csv('bass_data.csv')
+  mid_data.to_csv('mid_data.csv')
+  treble_data.to_csv('treb_data.csv')
     
   b_o_t = compute_volumes(bass_data)
   m_o_t = compute_volumes(mid_data)
@@ -211,7 +204,101 @@ def plot_volume(bot, mot, tot):
   plt.legend(["bass","mid","treble"])
   plt.show()
 
-def draw_record_visual(bot, mot, tot):
+def scale_data(pos_data):
+  """
+  Scales data so it goes from -1 to 1.
+
+  Args:
+    pos_data (pandas dataframe): has four columns, the first for radians,
+      and then one for the radius of each bucket. the indices are times.
+  """
+
+  largest_value = pos_data.abs().max().max()
+  scale_factor = 1/largest_value
+
+  return pos_data * scale_factor
+
+def create_osciallations(pos_data):
+  """
+  Takes basic volume over time data for each bucket and adds in oscillations
+  to make it more visually representative.
+
+  Args:
+    pos_data (pandas dataframe): has radians in the first column and radius
+      variation data for each bucket in the following columns.
+  """
+
+  # going to create twice as many data points as original so we can create
+  # waves using the extra datapoints
+  new_radians = np.linspace(0, 2*np.pi, len(pos_data.iloc[:,0]) * 2)
+  final_data = pd.DataFrame(index=new_radians)
+  baseline_amplitude = 0.2 # amplitude of band of 0 data. also the threshold for 0 data.
+  osc_sign = -1 # flips with every data point to create oscillations
+
+  for c in pos_data:
+    column = pos_data[c]
+    r = []
+    
+    for i in range(len(column)-1):
+      current = column.iloc[i]
+      next = column.iloc[i+1]
+
+      r.append(current) # add current radius datapoint to new radius list
+
+      # add in the intermediate point between two current datapoints (with the
+      # correct sign)
+      if current < baseline_amplitude and next < baseline_amplitude:
+        r.append(baseline_amplitude * osc_sign)
+        osc_sign = -osc_sign
+      else:
+        sign = current/abs(current) * -1
+        r.append(baseline_amplitude * sign)
+
+    # add the last two values (that we can't index through the loop)
+    r.append(current)
+    r.append(r[0])
+
+    final_data.insert(len(final_data.columns), column.name, r)
+
+  return final_data
+
+def plot_polar(pos_data):
+  """
+  Takes position data that's sent to the servos and plots it.
+
+  Args:
+    pos_data (pandas dataframe): has radians in the first column and radius
+      variations for each bucket in the next columns.
+  """
+
+  radii = [1, 3, 5] # baseline radii (no var) for each bucket
+
+  radians = pos_data.index
+
+  for i in range(3):
+    column = pos_data.iloc[:, i]
+    baseline_radius = radii[i]
+
+    r = column + baseline_radius
+
+    plt.polar(radians, r)
+
+  plt.grid(False)
+  plt.yticks([])
+  plt.xticks([])
+
+  # extracts the name of the audio bit to title the plot
+  t = INPUT_FILE[INPUT_FILE.rfind('assets/') + 7:-4]
+  plt.title(t)
+
+  # gives you a choice whether to save it or not
+  file_name = input('Do you want to save this image? Enter "no" or a filename.')
+  if file_name != 'no':
+    plt.savefig('../assets/imgs/' + file_name + '.png')
+
+  plt.show()
+
+def create_record_visual_data(bot, mot, tot, to_draw):
   """"
   Visualize the different ranges' volume over time the way our mechanism
   would draw it.
@@ -220,28 +307,39 @@ def draw_record_visual(bot, mot, tot):
     bot (array): average bass volume over time
     mot (array): average mid volume over time
     tot (array): average treble volume over time
+    to_draw (bool): controls whether to plot it or not
   """
 
   data = [bot, mot, tot]
-  radii = [1, 3, 5] # baseline radii (no var) for each bucket
   avgs = [np.average(bot), np.average(mot), np.average(tot)]
 
-  # fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+  radius_labels = ['r_bass', 'r_mid', 'r_treb']
+  radians = np.linspace(0, 2*np.pi, num_samples, True)
+  pos_data = pd.DataFrame(index=radians)
 
   for i in range(3):
+
     # find variation of each datapoint from average and normalize it
-    radius_var = (data[i] - avgs[i])/np.ptp(data[i])
-    r = radii[i] + radius_var
+    # divides by the range of values in that data set
+    if np.ptp(data[i]) == 0:
+      radius_var = np.zeros(num_samples)
+    else:
+      radius_var = (data[i] - avgs[i])/np.ptp(data[i])
+      radius_var = radius_var[:num_samples]
+      # note, chopping radius_var might cause problems later
+    
+    pos_data.insert(i, radius_labels[i], radius_var)
 
-    theta = np.linspace(0, 2*np.pi, len(data[i]), True)
+  # remove first row before scaling it because that always has a weirdly high value
+  sliced_pos_data = pos_data.iloc[1:]
+  scaled_data = scale_data(sliced_pos_data)
 
-    plt.polar(theta, r)
+  final_data = create_osciallations(scaled_data)
 
-  plt.grid(False)
-  plt.yticks([])
-  plt.xticks([])
+  if to_draw:
+    plot_polar(final_data)
 
-  plt.show()
+  return final_data
 
 if __name__ == "main" :
     print("a funky fresh disco diva")

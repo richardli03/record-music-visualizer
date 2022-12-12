@@ -30,8 +30,9 @@ def input_file(audio):
     song, sr = l.load(INPUT_FILE, mono = True)
 
     global song_length; song_length = len(song)
-    global sample_length; sample_length = 1000 # milliseconds
+    global sample_length; sample_length = 16000 # milliseconds
     global num_samples; num_samples = song_length // sample_length
+    # global cut_len; cut_len = int(0.1 * num_samples)
 
 def make_freq_spread(x, Fs, plot):
     """
@@ -69,7 +70,6 @@ def data_splitter(freq_data):
       freq_data (pandas Dataframe): a dataframe with all of the frequency data over the course of a song
   """
   
-  freq_data = freq_data.fillna(value = -100) #NaNs become -100
   halved_data = freq_data[len(freq_data)//2:] #takes last half of data
 
   length = len(halved_data)
@@ -103,6 +103,7 @@ def weighted_avg(freqs):
   
   for val in freqs:
     if val < -75: # filter out quiet/ambient noise
+      val *= 0.8
       weight = 0.01
     elif val > -50: # weight actual signals so they show 
       weight = 3
@@ -114,8 +115,8 @@ def weighted_avg(freqs):
     
   # if every signal was < -75 dB
   if len(set(weights)) == 1 and weights[0] == 0.01:
-    return -100
-
+    return -60
+  
   return sum(val_weights)/sum(weights)
         
 def compute_volumes(subset_freq):
@@ -134,6 +135,32 @@ def compute_volumes(subset_freq):
     
   return average
 
+def drop_silence(all_freq_data):
+  """
+  Drop the super quiet stuff that exists before the song really starts playing
+
+  Args:
+      all_freq_data (pandas): all of the frequency data of the song over time.
+  """
+  l_cut = 0
+  r_cut = 0
+  for sample in all_freq_data.columns:
+    # print(all_freq_data[sample].max())
+    if all_freq_data[sample].mean() > -75:
+      break
+    
+    l_cut += 1
+  
+  for sample in reversed(all_freq_data.columns):
+    # print(all_freq_data[sample].max())
+    if all_freq_data[sample].mean() > -75:
+      break
+    
+    r_cut += 1
+
+  return l_cut, r_cut
+  
+  
 def create_freq_data(FROM_CSV):
   """
   Put all the data from the song into a data frame with time (which is in
@@ -146,6 +173,11 @@ def create_freq_data(FROM_CSV):
 
   Args:
     None
+    
+  Returns:
+    all_freq_data: all of the frequency data for ths song
+    l_cut: the column of the cutoff on the left side of the dataframe
+    r_cut: the column of the cutoff on the right side of the dataframe
   """
   if FROM_CSV:
     all_freq_data = pd.read_csv('all_freq_data.csv')
@@ -158,9 +190,19 @@ def create_freq_data(FROM_CSV):
       freq_data, freq_space = make_freq_spread(song[samples[i]:samples[i+1]], sr, False)
       all_freq_data[sample] = pd.Series(l.amplitude_to_db(freq_data))
 
-    all_freq_data.to_csv("all_freq_data.csv")
+    # drop the first and last column 
+    all_freq_data = all_freq_data.fillna(value = -100) #NaNs become -100
+    all_freq_data.to_csv("test_all_freq_data.csv")
+    global l_cut, r_cut; l_cut, r_cut = drop_silence(all_freq_data)
+    print(l_cut, r_cut)
+    all_freq_data.drop(columns=all_freq_data.columns[:l_cut],axis=1, inplace=True)
+    all_freq_data = all_freq_data.iloc[:, :-r_cut]
 
-  return all_freq_data  
+
+    all_freq_data.to_csv("all_freq_data.csv")
+    # print(all_freq_data)
+
+  return all_freq_data
 
 def process(input, FROM_CSV):
   """
@@ -184,7 +226,6 @@ def process(input, FROM_CSV):
   b_o_t = compute_volumes(bass_data)
   m_o_t = compute_volumes(mid_data)
   t_o_t = compute_volumes(treble_data)
-
   return b_o_t, m_o_t, t_o_t
 
 def plot_volume(bot, mot, tot):
@@ -218,7 +259,7 @@ def scale_data(pos_data):
 
   return pos_data * scale_factor
 
-def create_osciallations(pos_data):
+def create_oscillations(pos_data):
   """
   Takes basic volume over time data for each bucket and adds in oscillations
   to make it more visually representative.
@@ -234,8 +275,9 @@ def create_osciallations(pos_data):
   final_data = pd.DataFrame(index=new_radians)
   baseline_amplitude = 0.2 # amplitude of band of 0 data. also the threshold for 0 data.
   osc_sign = -1 # flips with every data point to create oscillations
-
+  
   for c in pos_data:
+    
     column = pos_data[c]
     r = []
     
@@ -292,7 +334,7 @@ def plot_polar(pos_data):
   plt.title(t)
 
   # gives you a choice whether to save it or not
-  file_name = input('Do you want to save this image? Enter "no" or a filename.')
+  file_name = input('Do you want to save this image? Enter "no" or a filename. ')
   if file_name != 'no':
     plt.savefig('../assets/imgs/' + file_name + '.png')
 
@@ -309,23 +351,26 @@ def create_record_visual_data(bot, mot, tot, to_draw):
     tot (array): average treble volume over time
     to_draw (bool): controls whether to plot it or not
   """
+  
+  skip = 10 # Only process every 10th sample point (reduces density)
+    
 
   data = [bot, mot, tot]
   avgs = [np.average(bot), np.average(mot), np.average(tot)]
+  num_samples_c = (num_samples - r_cut - l_cut)
 
   radius_labels = ['r_bass', 'r_mid', 'r_treb']
-  radians = np.linspace(0, 2*np.pi, num_samples, True)
+  radians = np.linspace(0, 2*np.pi, num_samples_c, True)
   pos_data = pd.DataFrame(index=radians)
-
+  
   for i in range(3):
-
     # find variation of each datapoint from average and normalize it
     # divides by the range of values in that data set
     if np.ptp(data[i]) == 0:
-      radius_var = np.zeros(num_samples)
+      radius_var = np.zeros(num_samples_c)
     else:
       radius_var = (data[i] - avgs[i])/np.ptp(data[i])
-      radius_var = radius_var[:num_samples]
+      radius_var = radius_var[:num_samples_c]
       # note, chopping radius_var might cause problems later
     
     pos_data.insert(i, radius_labels[i], radius_var)
@@ -334,7 +379,7 @@ def create_record_visual_data(bot, mot, tot, to_draw):
   sliced_pos_data = pos_data.iloc[1:]
   scaled_data = scale_data(sliced_pos_data)
 
-  final_data = create_osciallations(scaled_data)
+  final_data = create_oscillations(scaled_data)
 
   if to_draw:
     plot_polar(final_data)

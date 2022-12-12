@@ -8,7 +8,7 @@ def make_parser():
     Creates a ArgumentParser object for CLI.
     """
     p = argparse.ArgumentParser(
-        description="Visualize and analyze error from oblique/straight tag observations")
+        description="Some customizability options for our audio processing workflow!")
 
     p.add_argument(
         "-n", help="name of the test you'd like to run in the configuration file")

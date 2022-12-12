@@ -120,7 +120,7 @@ def weighted_avg(freqs):
         
 def compute_volumes(subset_freq):
   """
-  Compute the volume/time of a frequency spectrum over time
+  Compute the volume/time of oa frequency spectrum over time
 
   Args:
       subset_freq (pandas Dataframe): a dataframe with all the frequency data of a certain spectrum over the course of a song
@@ -134,7 +134,7 @@ def compute_volumes(subset_freq):
     
   return average
 
-def create_freq_data(FROM_CSV):
+def create_freq_data(name, FROM_CSV):
   """
   Put all the data from the song into a data frame with time (which is in
   samples) along the columns and frequencies as the rows.
@@ -148,7 +148,9 @@ def create_freq_data(FROM_CSV):
     None
   """
   if FROM_CSV:
-    all_freq_data = pd.read_csv('all_freq_data.csv')
+    all_freq_data = pd.read_csv(f'../assets/datasets/{name}.csv')
+    dataset_path = ""
+    
   else:
     samples = np.linspace(0, song_length, num_samples, dtype = "int") # create a linspace for time (by sample)
 
@@ -157,12 +159,13 @@ def create_freq_data(FROM_CSV):
     for i, sample in enumerate(samples[:-1]):
       freq_data, freq_space = make_freq_spread(song[samples[i]:samples[i+1]], sr, False)
       all_freq_data[sample] = pd.Series(l.amplitude_to_db(freq_data))
+    
+    dataset_path = f"../assets/datasets/{name}.csv"
+    all_freq_data.to_csv(dataset_path)
 
-    all_freq_data.to_csv("all_freq_data.csv")
+  return all_freq_data, dataset_path
 
-  return all_freq_data  
-
-def process(input, FROM_CSV):
+def process(name, input, FROM_CSV):
   """
   Tie together all the functions so you can start with an audio input
   and get out the data for volume over time for bass, mid, and treble.
@@ -175,17 +178,17 @@ def process(input, FROM_CSV):
   """
 
   input_file(input)
-  all_freq_data = create_freq_data(FROM_CSV)
+  all_freq_data, dataset_path = create_freq_data(name, FROM_CSV)
   bass_data, mid_data, treble_data = data_splitter(all_freq_data)
-  bass_data.to_csv('bass_data.csv')
-  mid_data.to_csv('mid_data.csv')
-  treble_data.to_csv('treb_data.csv')
+  # bass_data.to_csv('bass_data.csv')
+  # mid_data.to_csv('mid_data.csv')
+  # treble_data.to_csv('treb_data.csv')
     
   b_o_t = compute_volumes(bass_data)
   m_o_t = compute_volumes(mid_data)
   t_o_t = compute_volumes(treble_data)
 
-  return b_o_t, m_o_t, t_o_t
+  return b_o_t, m_o_t, t_o_t, dataset_path
 
 def plot_volume(bot, mot, tot):
   """
@@ -288,13 +291,13 @@ def plot_polar(pos_data):
   plt.xticks([])
 
   # extracts the name of the audio bit to title the plot
-  t = INPUT_FILE[INPUT_FILE.rfind('assets/') + 7:-4]
+  t = INPUT_FILE[INPUT_FILE.rfind('assets/songs/') + 7:-4]
   plt.title(t)
 
   # gives you a choice whether to save it or not
   file_name = input('Do you want to save this image? Enter "no" or a filename.')
   if file_name != 'no':
-    plt.savefig('../assets/imgs/' + file_name + '.png')
+    plt.savefig(f'../assets/imgs/{file_name}.png')
 
   plt.show()
 

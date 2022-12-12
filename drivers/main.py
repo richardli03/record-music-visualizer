@@ -6,9 +6,6 @@ from timeit import default_timer as timer
 from send_serial import *
 import pandas as pd
 
-# For testing
-stepper_multiplier = 0.25
-
 class Stepper:
     def __init__(self, name):
         self._name = name
@@ -124,6 +121,7 @@ def main():
     t_start = timer() # time since Jan 1, 1970 for timer purposes
     
     print(song_data)
+    current_pos = [0, 0, 0, 0]
     
     for sample in num_samples:
         # Split the new row of values into their components
@@ -137,9 +135,11 @@ def main():
             pass
         
         # Get bass, mid, treble frequences and move motors accordingly
-        bass.move(vals[1])
-        mid.move(vals[2])
-        treble.move(vals[3])    
+        bass.move(vals[1]-current_pos[1])
+        mid.move(vals[2]-current_pos[2])
+        treble.move(vals[3]-current_pos[3])   
+       
+        current_pos = vals # stores current values 
         
     dc_off()
 

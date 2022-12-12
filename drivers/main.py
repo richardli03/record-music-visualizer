@@ -119,6 +119,12 @@ def main():
     dc_speed(compute_DC_speed(song_length))
 
     t_start = timer() # time since Jan 1, 1970 for timer purposes
+<<<<<<< HEAD
+=======
+    # b_old = 0
+    # m_old = 0
+    # t_old = 0
+>>>>>>> 5f2d4293dfcf818ac62eb6ee7005b6e9b5b65ebe
     
     print(song_data)
     current_pos = [0, 0, 0, 0]
@@ -134,12 +140,23 @@ def main():
         while timer() - seconds < t_start:
             pass
         
+<<<<<<< HEAD
         # Get bass, mid, treble frequences and move motors accordingly
         bass.move(vals[1]-current_pos[1])
         mid.move(vals[2]-current_pos[2])
         treble.move(vals[3]-current_pos[3])   
        
         current_pos = vals # stores current values 
+=======
+        # Get bass, mid, treble frequences
+        bass.move(vals[1])
+        mid.move(vals[2])
+        treble.move(vals[3]) 
+        
+        # b_old = vals[1]
+        # m_old = vals[2]
+        # t_old = vals[3]  
+>>>>>>> 5f2d4293dfcf818ac62eb6ee7005b6e9b5b65ebe
         
     dc_off()
 

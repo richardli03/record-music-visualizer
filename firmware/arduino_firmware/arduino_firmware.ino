@@ -136,11 +136,6 @@ void commandMove(AccelStepper &stepper, long steps, int index) {
     stepper.setSpeed(1100);  // must set speed after moveTo to get rid of accl
     }
   } else { // if stepper is currently moving
-    // stop
-    stepper.setSpeed(0);
-
-    //TODO correctly adjust next target
-    //-abs(steps - stepper.distanceToGo());
-    next_target[index] =   + distanceToGo; 
+    next_target[index] = steps; 
   }
 }

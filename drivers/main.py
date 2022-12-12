@@ -22,8 +22,10 @@ class Stepper:
         Args:
             value (_type_): _description_
         """
-        move_amount = 1139*value + -17.9
-        move_amount_steps = move_amount * 1.8 * stepper_multiplier
+
+        # stepper motor calibration equation
+        move_amount_steps = 625 * (-value) + -7.23 # from inches to steps
+        # move_amount_steps = move_amount * 1.8 * stepper_multiplier
 
         if self._name == "bass":
             # move calibration
@@ -40,7 +42,7 @@ class Stepper:
             # move calibration
             
             stepper("c", int(move_amount_steps))
-            pass
+            return
     
     def __repr__(self) -> str:
         return f"Stepper motor {self._name}"
@@ -80,12 +82,25 @@ def theta_to_seconds(theta, song_length):
 def main():
     dc_off()
     # First thing to do is rotate the thing at the correct speed:
-    song_length = 60 # s || pretend it's a 2 minute song
+    song_length = 120 # s || pretend it's a 2 minute song
     
     # initialize stepper motors
     bass = Stepper("bass")
     mid = Stepper("mid")
     treble = Stepper("treb")
+
+    # stepper calibration/initialization routine
+    # sends each stepper to its initial position, assuming each starts
+    # against its respective calibration block
+    baseline_radii = [1.2, 3.2, 4.5] # inches
+    blocks = [0, 1.5, 3.5] # length of the calibration blocks
+    pos = [baseline_radii[i] - blocks [i] for i in range(3)]
+
+    bass.move(pos[0])
+    mid.move(pos[1])
+    treble.move(pos[2])
+
+    print('reached starting positions')
 
     song_data = pd.read_csv("datasets/herestous.csv").transpose()
     
@@ -103,20 +118,15 @@ def main():
     song_data.drop(["theta"], inplace= True, axis = 0)
     song_data = pd.concat([seconds_for_movement, song_data])
     
-    
-    # start spinning the disk)
+    # start spinning the disk
     dc_speed(compute_DC_speed(song_length))
 
     t_start = timer() # time since Jan 1, 1970 for timer purposes
-    b_old = 0
-    m_old = 0
-    t_old = 0
     
     print(song_data)
     
     for sample in num_samples:
         # Split the new row of values into their components
-        
         next_sample = song_data[sample]
         vals = next_sample.to_list()
         seconds = vals[0]
@@ -126,16 +136,11 @@ def main():
         while timer() - seconds < t_start:
             pass
         
-        # Get bass, mid, treble frequences
-        # bass.move(vals[1]-b_old)
-        # mid.move(vals[2]-m_old)
-        # treble.move(vals[3]-t_old)    
+        # Get bass, mid, treble frequences and move motors accordingly
+        bass.move(vals[1])
+        mid.move(vals[2])
+        treble.move(vals[3])    
         
-        b_old = vals[1]
-        m_old = vals[2]
-        t_old = vals[3]  
-        
-        # Compute the stepper motor movement to correspond with an int
     dc_off()
 
 if __name__ == "__main__":

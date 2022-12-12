@@ -9,17 +9,17 @@
         "song_data": "../assets/datasets/bass.csv",
         "song_length": 8
     },
-    "here's to us": {
+    "here's_to_us": {
         "audio": "../assets/songs/here's_to_us.wav",
         "song_data": "",
         "song_length": 177
     },
-    "love story": {
+    "love_story": {
         "audio": "../assets/songs/love_story_tswift.wav",
-        "song_data": "../assets/datasets/love story.csv",
+        "song_data": "../assets/datasets/love_story.csv",
         "song_length": 235
     },
-    "misery business": {
+    "misery_business": {
         "audio": "../assets/songs/Misery_Business_Paramore.wav",
         "song_data": "",
         "song_length": 279

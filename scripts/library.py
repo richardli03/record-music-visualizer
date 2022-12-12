@@ -120,7 +120,7 @@ def weighted_avg(freqs):
         
 def compute_volumes(subset_freq):
   """
-  Compute the volume/time of oa frequency spectrum over time
+  Compute the volume/time of a frequency spectrum over time
 
   Args:
       subset_freq (pandas Dataframe): a dataframe with all the frequency data of a certain spectrum over the course of a song
@@ -149,6 +149,7 @@ def create_freq_data(name, FROM_CSV):
   """
   if FROM_CSV:
     all_freq_data = pd.read_csv(f'../assets/datasets/{name}.csv')
+    all_freq_data = all_freq_data.iloc[:,1:] # I have no idea why the first column is shooting to narnia. This fixes it.
     dataset_path = ""
     
   else:

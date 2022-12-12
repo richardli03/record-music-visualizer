@@ -1,12 +1,27 @@
 {
-    "bass":{
-        "song_length" : 1,
-        "song_data" : ""
+    "365": {
+        "audio": "../assets/songs/365.wav",
+        "song_data": "",
+        "song_length": 246
     },
-
-    "365":{
-        "song_length" : 1,
-        "song_data" : ""
+    "bass": {
+        "audio": "../assets/songs/bass.wav",
+        "song_data": "../assets/datasets/bass.csv",
+        "song_length": 8
+    },
+    "here's to us": {
+        "audio": "../assets/songs/here's_to_us.wav",
+        "song_data": "",
+        "song_length": 177
+    },
+    "love story": {
+        "audio": "../assets/songs/love_story_tswift.wav",
+        "song_data": "../assets/datasets/love story.csv",
+        "song_length": 235
+    },
+    "misery business": {
+        "audio": "../assets/songs/Misery_Business_Paramore.wav",
+        "song_data": "",
+        "song_length": 279
     }
-    
 }

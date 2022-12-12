@@ -35,11 +35,10 @@ AccelStepper stepperA(AccelStepper::DRIVER, 9, 8);    // stp = 9, dir = 8
 AccelStepper stepperB(AccelStepper::DRIVER, 11, 10);  // stp = 11, dir = 10
 AccelStepper stepperC(AccelStepper::DRIVER, 13, 12);  // stp = 13, dir = 12
 
-// buffer for target position change before initial target reached
+// buffer for target position-change before initial target reached
 long next_target[3] = { 0, 0, 0 };
 
 // *** START CODE ***
-
 
 void setup() {
   // initialize serial communication
@@ -61,7 +60,7 @@ void loop() {
 
   // check and process serial command if needed
   if (Serial.available() != 0) {
-    // doesn't need to be a function but nice for organization
+    // doesn't need to be a separate function but nice for organization
     SerialRead();
   }
 }
@@ -82,7 +81,7 @@ void stepperEachLoop(AccelStepper &stepper, int index) {
   }
 
   // check if stepper has stopped and needs to set a new target
-  if (stepper.speed() ==0 & next_target[index] != 0) {
+  if (stepper.speed() == 0 & next_target[index] != 0) {
     stepper.move(next_target[index]);  // set target as next target
     stepper.setSpeed(1100);
     next_target[index] = 0;  // reset next target
@@ -109,7 +108,7 @@ void SerialRead() {
     }
     // C stepper
     else if (command.startsWith("sc")) {
-      commandMove(stepperC, steps, 1);
+      commandMove(stepperC, steps, 2);
     }
     // DC motor run with `drN` where N is speed between 0-255
     else if (command.startsWith("dr")) {
@@ -125,20 +124,23 @@ void SerialRead() {
   }
 }
 
-
 void commandMove(AccelStepper &stepper, long steps, int index) {
 // determine movement based on command and current motor state
-
-  if (stepper.isRunning() == false) {
-    Serial.print("NOT RUNNING, GO AHEAD");
+  if (stepper.speed() == 0) {
+    if (steps == 0){
+    stepper.setSpeed(0); // sync between arduino and pi that motor shouldn't move
+    }
+    else{
     // move stepper `steps` steps
     stepper.move(steps);     // set relative target position
     stepper.setSpeed(1100);  // must set speed after moveTo to get rid of accl
+    }
   } else { // if stepper is currently moving
     // stop
     stepper.setSpeed(0);
-    Serial.print("RUNNING, ADDING TO QUEUE");
-    // set next target accordingly
-    next_target[index] = steps;  //TODO - stepperA.currentPosition();
+
+    //TODO correctly adjust next target
+    //-abs(steps - stepper.distanceToGo());
+    next_target[index] =   + distanceToGo; 
   }
 }

@@ -5,6 +5,8 @@ turn the DC motor on and spin the servo for a few seconds
 from timeit import default_timer as timer
 from send_serial import *
 import pandas as pd
+from csv import writer
+
 
 class Stepper:
     def __init__(self, name):
@@ -78,8 +80,9 @@ def theta_to_seconds(theta, song_length):
     
 def main():
     dc_off()
+    
     # First thing to do is rotate the thing at the correct speed:
-    song_length = 120 # s || pretend it's a 2 minute song
+    song_length = 10 # s || pretend it's a 2 minute song
     
     # initialize stepper motors
     bass = Stepper("bass")
@@ -97,8 +100,6 @@ def main():
     mid.move(pos[1])
     treble.move(pos[2])
 
-    print('reached starting positions')
-
     song_data = pd.read_csv("datasets/herestous.csv").transpose()
     
     # Catch errors
@@ -114,19 +115,13 @@ def main():
     # Get rid of theta data and add in seconds data
     song_data.drop(["theta"], inplace= True, axis = 0)
     song_data = pd.concat([seconds_for_movement, song_data])
-    
+    #debug = pd.DataFrame(columns = ["bass","mid","treble"])
     # start spinning the disk
     dc_speed(compute_DC_speed(song_length))
 
     t_start = timer() # time since Jan 1, 1970 for timer purposes
-<<<<<<< HEAD
-=======
-    # b_old = 0
-    # m_old = 0
-    # t_old = 0
->>>>>>> 5f2d4293dfcf818ac62eb6ee7005b6e9b5b65ebe
     
-    print(song_data)
+    #print(song_data)
     current_pos = [0, 0, 0, 0]
     
     for sample in num_samples:
@@ -137,27 +132,22 @@ def main():
         
         # i think this should prevent the steppers from moving faster than we want them to. 
         # may need to calibrate some stuff
-        while timer() - seconds < t_start:
-            pass
+        # while timer() - seconds < t_start:
+        #     pass
         
-<<<<<<< HEAD
-        # Get bass, mid, treble frequences and move motors accordingly
+        # Get bass, mid, treble positions, calculate change in position, and
+        # move accordingly
         bass.move(vals[1]-current_pos[1])
         mid.move(vals[2]-current_pos[2])
-        treble.move(vals[3]-current_pos[3])   
-       
+        treble.move(vals[3]-current_pos[3])  
+        
+        # Add movement commands to a debug file 
+        # debug.loc[len(debug)] = [vals[1]-current_pos[1],vals[2]-current_pos[2], vals[3]-current_pos[3]]
+
+        # print(current_pos)
         current_pos = vals # stores current values 
-=======
-        # Get bass, mid, treble frequences
-        bass.move(vals[1])
-        mid.move(vals[2])
-        treble.move(vals[3]) 
-        
-        # b_old = vals[1]
-        # m_old = vals[2]
-        # t_old = vals[3]  
->>>>>>> 5f2d4293dfcf818ac62eb6ee7005b6e9b5b65ebe
-        
+    
+    #debug.to_csv("debug1.csv")
     dc_off()
 
 if __name__ == "__main__":

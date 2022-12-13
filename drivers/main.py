@@ -82,7 +82,7 @@ def main():
     dc_off()
     
     # First thing to do is rotate the thing at the correct speed:
-    song_length = 10 # s || pretend it's a 2 minute song
+    song_length = 120 # s || pretend it's a 2 minute song
     
     # initialize stepper motors
     bass = Stepper("bass")
@@ -98,7 +98,7 @@ def main():
 
     bass.move(pos[0])
     mid.move(pos[1])
-    treble.move(pos[2])
+    treble.move(pos[2]) 
 
     song_data = pd.read_csv("datasets/herestous.csv").transpose()
     
@@ -115,13 +115,13 @@ def main():
     # Get rid of theta data and add in seconds data
     song_data.drop(["theta"], inplace= True, axis = 0)
     song_data = pd.concat([seconds_for_movement, song_data])
-    #debug = pd.DataFrame(columns = ["bass","mid","treble"])
+    debug = pd.DataFrame(columns = ["bass","mid","treble"])
     # start spinning the disk
     dc_speed(compute_DC_speed(song_length))
 
     t_start = timer() # time since Jan 1, 1970 for timer purposes
     
-    #print(song_data)
+    print(song_data)
     current_pos = [0, 0, 0, 0]
     
     for sample in num_samples:
@@ -132,8 +132,8 @@ def main():
         
         # i think this should prevent the steppers from moving faster than we want them to. 
         # may need to calibrate some stuff
-        # while timer() - seconds < t_start:
-        #     pass
+        while timer() - seconds < t_start:
+            pass
         
         # Get bass, mid, treble positions, calculate change in position, and
         # move accordingly
@@ -142,12 +142,12 @@ def main():
         treble.move(vals[3]-current_pos[3])  
         
         # Add movement commands to a debug file 
-        # debug.loc[len(debug)] = [vals[1]-current_pos[1],vals[2]-current_pos[2], vals[3]-current_pos[3]]
+        debug.loc[len(debug)] = [vals[1]-current_pos[1],vals[2]-current_pos[2], vals[3]-current_pos[3]]
 
         # print(current_pos)
         current_pos = vals # stores current values 
     
-    #debug.to_csv("debug1.csv")
+    debug.to_csv("debug4.csv")
     dc_off()
 
 if __name__ == "__main__":

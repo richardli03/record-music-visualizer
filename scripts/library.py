@@ -30,7 +30,7 @@ def input_file(audio):
     song, sr = l.load(INPUT_FILE, mono = True)
 
     global song_length; song_length = len(song)
-    global sample_length; sample_length = 16000 # milliseconds
+    global sample_length; sample_length = 2000 # milliseconds
     global num_samples; num_samples = song_length // sample_length
     # global cut_len; cut_len = int(0.1 * num_samples)
 
@@ -161,7 +161,7 @@ def drop_silence(all_freq_data):
   return l_cut, r_cut
   
   
-def create_freq_data(FROM_CSV):
+def create_freq_data(name, FROM_CSV):
   """
   Put all the data from the song into a data frame with time (which is in
   samples) along the columns and frequencies as the rows.
@@ -180,7 +180,10 @@ def create_freq_data(FROM_CSV):
     r_cut: the column of the cutoff on the right side of the dataframe
   """
   if FROM_CSV:
-    all_freq_data = pd.read_csv('all_freq_data.csv')
+    all_freq_data = pd.read_csv(f'../assets/datasets/{name}.csv')
+    all_freq_data = all_freq_data.iloc[:,1:] # I have no idea why the first column is shooting to narnia. This fixes it.
+    dataset_path = ""
+    
   else:
     samples = np.linspace(0, song_length, num_samples, dtype = "int") # create a linspace for time (by sample)
 
@@ -189,22 +192,23 @@ def create_freq_data(FROM_CSV):
     for i, sample in enumerate(samples[:-1]):
       freq_data, freq_space = make_freq_spread(song[samples[i]:samples[i+1]], sr, False)
       all_freq_data[sample] = pd.Series(l.amplitude_to_db(freq_data))
-
+ 
     # drop the first and last column 
-    all_freq_data = all_freq_data.fillna(value = -100) #NaNs become -100
-    all_freq_data.to_csv("test_all_freq_data.csv")
-    global l_cut, r_cut; l_cut, r_cut = drop_silence(all_freq_data)
-    print(l_cut, r_cut)
-    all_freq_data.drop(columns=all_freq_data.columns[:l_cut],axis=1, inplace=True)
-    all_freq_data = all_freq_data.iloc[:, :-r_cut]
+    
+  all_freq_data = all_freq_data.fillna(value = -100) #NaNs become -100
+  global l_cut, r_cut; l_cut, r_cut = drop_silence(all_freq_data)
+  
+  print(l_cut, r_cut)
+  all_freq_data.drop(columns=all_freq_data.columns[:l_cut],axis=1, inplace=True)
+  all_freq_data = all_freq_data.iloc[:, :-r_cut]
+      
+  dataset_path = f"../assets/datasets/{name}.csv"
+  all_freq_data.to_csv(dataset_path)
 
 
-    all_freq_data.to_csv("all_freq_data.csv")
-    # print(all_freq_data)
+  return all_freq_data, dataset_path
 
-  return all_freq_data
-
-def process(input, FROM_CSV):
+def process(name, input, FROM_CSV):
   """
   Tie together all the functions so you can start with an audio input
   and get out the data for volume over time for bass, mid, and treble.
@@ -217,16 +221,17 @@ def process(input, FROM_CSV):
   """
 
   input_file(input)
-  all_freq_data = create_freq_data(FROM_CSV)
+  all_freq_data, dataset_path = create_freq_data(name, FROM_CSV)
   bass_data, mid_data, treble_data = data_splitter(all_freq_data)
-  bass_data.to_csv('bass_data.csv')
-  mid_data.to_csv('mid_data.csv')
-  treble_data.to_csv('treb_data.csv')
+  # bass_data.to_csv('bass_data.csv')
+  # mid_data.to_csv('mid_data.csv')
+  # treble_data.to_csv('treb_data.csv')
     
   b_o_t = compute_volumes(bass_data)
   m_o_t = compute_volumes(mid_data)
   t_o_t = compute_volumes(treble_data)
-  return b_o_t, m_o_t, t_o_t
+
+  return b_o_t, m_o_t, t_o_t, dataset_path
 
 def plot_volume(bot, mot, tot):
   """
@@ -330,13 +335,13 @@ def plot_polar(pos_data):
   plt.xticks([])
 
   # extracts the name of the audio bit to title the plot
-  t = INPUT_FILE[INPUT_FILE.rfind('assets/') + 7:-4]
+  t = INPUT_FILE[INPUT_FILE.rfind('assets/songs/') + 7:-4]
   plt.title(t)
 
   # gives you a choice whether to save it or not
   file_name = input('Do you want to save this image? Enter "no" or a filename. ')
   if file_name != 'no':
-    plt.savefig('../assets/imgs/' + file_name + '.png')
+    plt.savefig(f'../assets/imgs/{file_name}.png')
 
   plt.show()
 

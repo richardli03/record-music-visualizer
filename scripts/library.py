@@ -247,7 +247,7 @@ def plot_volume(bot, mot, tot):
 
 def scale_data(pos_data):
   """
-  Scales data so it goes from -1 to 1.
+  Scales data so it goes from -0.75 to 0.75.
 
   Args:
     pos_data (pandas dataframe): has four columns, the first for radians,
@@ -255,7 +255,8 @@ def scale_data(pos_data):
   """
 
   largest_value = pos_data.abs().max().max()
-  scale_factor = 1/largest_value
+  scale_to = 0.75 # desired range
+  scale_factor = scale_to/largest_value
 
   return pos_data * scale_factor
 
@@ -313,7 +314,7 @@ def plot_polar(pos_data):
       variations for each bucket in the next columns.
   """
 
-  radii = [1, 3, 5] # baseline radii (no var) for each bucket
+  radii = [0.9, 2.7, 4.5] # baseline radii (no var) for each bucket
 
   radians = pos_data.index
 

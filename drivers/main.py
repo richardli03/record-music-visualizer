@@ -5,7 +5,7 @@ turn the DC motor on and spin the servo for a few seconds
 from timeit import default_timer as timer
 from send_serial import *
 import pandas as pd
-from csv import writer
+import time
 
 
 class Stepper:
@@ -23,29 +23,26 @@ class Stepper:
         """
 
         # stepper motor calibration equation
-        move_amount_steps = 625 * (-value) + -7.23 # from inches to steps
-        # move_amount_steps = move_amount * 1.8 * stepper_multiplier
-
+        move_amount_steps = (625 * (-value) + -7.23)  #from inches to steps
+        
+        if move_amount_steps < 0:
+                move_amount_steps *= 0.87
+                
+        
         if self._name == "bass":
-            # move calibration
             stepper("a", int(move_amount_steps))
             return
             
         if self._name == "mid":
-            # move calibration
-            
             stepper("b", int(move_amount_steps))
             return
             
         if self._name == "treb":
-            # move calibration
-            
             stepper("c", int(move_amount_steps))
             return
     
     def __repr__(self) -> str:
         return f"Stepper motor {self._name}"
-
 
 def compute_DC_speed(song_length) -> float:
     """
@@ -54,9 +51,9 @@ def compute_DC_speed(song_length) -> float:
     """
     # line of best fit 
     if song_length > 100:
-        motor_speed = 150 - 0.902*song_length + 0.00204*(song_length**2)
+        motor_speed = 152 - 0.902*song_length + 0.00204*(song_length**2)
     else:
-        motor_speed = 1328 - 27.5*song_length + 0.152*(song_length**2)
+        motor_speed = 1334 - 27.5*song_length + 0.152*(song_length**2) 
 
     print(f"Current DC speed is {motor_speed}")
 
@@ -75,14 +72,31 @@ def theta_to_seconds(theta, song_length):
         seconds: the number of seconds that should've passed to this theta
     """
     
-    sec_per_d = song_length/360
-    return theta * sec_per_d
+    sec_per_r = song_length/6.283185307
+    # sec_per_r = song_length/360
+    return theta * sec_per_r
+
+
+def create_song_data():
+    song_data = pd.read_csv(INPUT_FILE).transpose()
+
+    # Catch errors
+    if song_data.empty:
+        raise Exception("No song data found!")
+        return 
+    
+    num_samples = list(song_data.columns)
+    # Convert the theta column to how many seconds it should be before the thing is where it is.
+    seconds_for_movement = pd.DataFrame([theta_to_seconds(song_data[sample][0], SONG_LENGTH) for sample in num_samples]).transpose()
+    
+    # Get rid of theta data and add in seconds data
+    song_data.drop(["theta"], inplace= True, axis = 0)
+    song_data = pd.concat([seconds_for_movement, song_data])
+    return song_data, num_samples
+    
     
 def main():
     dc_off()
-    
-    # First thing to do is rotate the thing at the correct speed:
-    song_length = 120 # s || pretend it's a 2 minute song
     
     # initialize stepper motors
     bass = Stepper("bass")
@@ -92,37 +106,37 @@ def main():
     # stepper calibration/initialization routine
     # sends each stepper to its initial position, assuming each starts
     # against its respective calibration block
-    baseline_radii = [1.2, 3.2, 4.5] # inches
+    
+    baseline_radii = [0.9, 2.8, 4.3] # inches
     blocks = [0, 1.5, 3.5] # length of the calibration blocks
+    
     pos = [baseline_radii[i] - blocks [i] for i in range(3)]
-
-    bass.move(pos[0])
-    mid.move(pos[1])
-    treble.move(pos[2]) 
-
-    song_data = pd.read_csv("datasets/herestous.csv").transpose()
     
-    # Catch errors
-    if song_data.empty:
-        print("No song data found!")
-        return 
+    treble.move((1/0.9)* pos[2]) 
+    time.sleep(1)
+    mid.move((1/0.9)*pos[1])
+    time.sleep(1)
+    bass.move((1/0.9)*(pos[0]))
+    time.sleep(1)
     
-    num_samples = list(song_data.columns)
-
-    # Convert the theta column to how many seconds it should be before the thing is where it is.
-    seconds_for_movement = pd.DataFrame([theta_to_seconds(song_data[sample][0], song_length) for sample in num_samples]).transpose()
+    song_data, num_samples = create_song_data()
     
-    # Get rid of theta data and add in seconds data
-    song_data.drop(["theta"], inplace= True, axis = 0)
-    song_data = pd.concat([seconds_for_movement, song_data])
-    debug = pd.DataFrame(columns = ["bass","mid","treble"])
+    # debug = pd.DataFrame(columns = ["time", "bass","mid","treble"])
+    print(song_data)
+    
+    current_pos = [0, 0, 0, 0]
+    
+    # Sleep before starting!
+    print("ready to begin!")
+    time.sleep(3)
+    
     # start spinning the disk
-    dc_speed(compute_DC_speed(song_length))
+    dc_speed(compute_DC_speed(SONG_LENGTH))  
+
 
     t_start = timer() # time since Jan 1, 1970 for timer purposes
-    
-    print(song_data)
-    current_pos = [0, 0, 0, 0]
+  
+    # current_time = 0
     
     for sample in num_samples:
         # Split the new row of values into their components
@@ -130,25 +144,33 @@ def main():
         vals = next_sample.to_list()
         seconds = vals[0]
         
-        # i think this should prevent the steppers from moving faster than we want them to. 
-        # may need to calibrate some stuff
-        while timer() - seconds < t_start:
+        # # i think this should prevent the steppers from moving faster than we want them to. 
+        # # may need to calibrate some stuff
+        while timer() - (0.3 + seconds) < t_start:
             pass
         
         # Get bass, mid, treble positions, calculate change in position, and
         # move accordingly
-        bass.move(vals[1]-current_pos[1])
-        mid.move(vals[2]-current_pos[2])
-        treble.move(vals[3]-current_pos[3])  
+        bass.move((vals[1]-current_pos[1])*STEPPER_SCALE)
+        time.sleep(0.15)
+        mid.move((vals[2]-current_pos[2])*STEPPER_SCALE)
+        time.sleep(0.15)
+        treble.move((vals[3]-current_pos[3])*STEPPER_SCALE)  
         
+        # print(f"{seconds-current_time} seconds")
+        # print(f"moving {(625 * (-(vals[2]-current_pos[2])) + -7.23)*STEPPER_SCALE} steps")
+       
         # Add movement commands to a debug file 
-        debug.loc[len(debug)] = [vals[1]-current_pos[1],vals[2]-current_pos[2], vals[3]-current_pos[3]]
+        # debug.loc[len(debug)] = [seconds-current_time, vals[1]-current_pos[1],vals[2]-current_pos[2], vals[3]-current_pos[3]]
 
-        # print(current_pos)
+        # current_time = seconds
         current_pos = vals # stores current values 
     
-    debug.to_csv("debug4.csv")
+    # debug.to_csv("debug4.csv")
     dc_off()
 
 if __name__ == "__main__":
+    SONG_LENGTH = 154 # s 
+    INPUT_FILE = "datasets/love_story.csv"
+    STEPPER_SCALE = 0.45
     main()

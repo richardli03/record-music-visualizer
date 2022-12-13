@@ -21,7 +21,14 @@ def make_parser():
 
     return p
   
-def main(config):
+def main():
+  """
+  Runs the audio analysis pipeline
+
+  Returns:
+      data (pandas dataframe): A dataframe containing movement information
+        for stepper motors. Additionally is written to a csv in the drivers folder.
+  """
   bot, mot, tot, dataset_path = lib.process(NAME_OF_TEST, INPUT_FILE, FROM_CSV)
   
   if dataset_path != "":
@@ -36,9 +43,8 @@ def main(config):
   lib.plot_volume(bot, mot, tot)
   data = lib.create_record_visual_data(bot, mot, tot, PLOT)
   data.to_csv(f'../drivers/datasets/{NAME_OF_TEST}.csv')
+  return data
 
-  
-    
   
 if __name__ == "__main__":
   parser = make_parser()
@@ -60,4 +66,4 @@ if __name__ == "__main__":
       print("no CSV found, continuing with processing")
       FROM_CSV = False
     
-  main(config)
+  main()

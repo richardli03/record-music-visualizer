@@ -4,6 +4,11 @@
         "song_data": "",
         "song_length": 246
     },
+    "a_little_night": {
+        "audio": "../assets/songs/A_Little_Night_Mozart.wav",
+        "song_data": "../assets/datasets/a_little_night.csv",
+        "song_length": 350
+    },
     "bass": {
         "audio": "../assets/songs/bass.wav",
         "song_data": "../assets/datasets/bass.csv",

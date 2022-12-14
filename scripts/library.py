@@ -30,7 +30,7 @@ def input_file(audio):
     song, sr = l.load(INPUT_FILE, mono = True)
 
     global song_length; song_length = len(song)
-    global sample_length; sample_length = 2000 # milliseconds
+    global sample_length; sample_length = 4000 # milliseconds
     global num_samples; num_samples = song_length // sample_length
     # global cut_len; cut_len = int(0.1 * num_samples)
 

@@ -125,17 +125,12 @@ void SerialRead() {
 }
 
 void commandMove(AccelStepper &stepper, long steps, int index) {
-// determine movement based on command and current motor state
+  // determine movement based on command and current motor state
   if (stepper.speed() == 0) {
-    if (steps == 0){
-    stepper.setSpeed(0); // sync between arduino and pi that motor shouldn't move
-    }
-    else{
     // move stepper `steps` steps
     stepper.move(steps);     // set relative target position
     stepper.setSpeed(1100);  // must set speed after moveTo to get rid of accl
-    }
-  } else { // if stepper is currently moving
-    next_target[index] = steps; 
+  } else {                   // if stepper is currently moving
+    next_target[index] = steps;
   }
 }
